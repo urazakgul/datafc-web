@@ -1,115 +1,93 @@
-import os
 import streamlit as st
-from code.analysis import (
+from modules.homepage import get_data
+from code.funcs.analytics import (
     match_statistics_impact_analysis,
     predictive_analytics
 )
-from code.utils.helpers import load_filtered_json_files, get_user_selection
-from config import match_performance_translations, match_performance_binary, LEAGUE_COUNTRY_LOOKUP
+from code.utils.helpers import render_spinner
+from config import match_performance_binary
 
-def render_spinner(content_function, *args, **kwargs):
-    with st.spinner("İçerik hazırlanıyor..."):
-        content_function(*args, **kwargs)
+def load_game_data(selected_week):
+    match_data_df = get_data("match_data")
+    games_data_selected_week = match_data_df[match_data_df["week"] == selected_week]
 
-def load_game_data(directories, league_display, season_display):
-    country_display = LEAGUE_COUNTRY_LOOKUP.get(league_display, "unknown")
-    match_data_df = load_filtered_json_files(directories, country_display, league_display, season_display, "match_data")
-    match_data_df_ended = match_data_df[match_data_df["status"].isin(["Ended","Retired"])]
-
-    if not match_data_df_ended.empty:
-        max_round = match_data_df_ended["week"].max()
-        max_round_next_day = max_round + 1
-        games_data_next_day = match_data_df[match_data_df["week"] == max_round_next_day]
-
-        if not games_data_next_day.empty:
-            return games_data_next_day, max_round_next_day
-        else:
-            st.warning("Seçilen lig ve sezonda bir sonraki haftaya ait maçlar bulunamadı.")
-            return None
+    if not games_data_selected_week.empty:
+        return games_data_selected_week
     else:
-        st.warning("Henüz yeterli veri bulunmamaktadır.")
+        st.warning("No matches found for the selected matchweek in the league and season.")
         return None
 
-def handle_eda_analysis(team_list, change_situations, change_body_parts, selected_category, extended_options):
-    league, season, league_display, season_display, _, _, _ = get_user_selection(
-        team_list,
-        change_situations,
-        change_body_parts,
-        include_team=False,
-        include_situation_type=False,
-        include_body_part=False
-    )
-    if selected_category == "İstatistiklerin Maça Etkisi":
+def handle_eda_analysis(selected_category, extended_options):
+    if selected_category == "Impact of Statistics on Matches":
         selected_variable = st.sidebar.selectbox(
-            label="İstatistikler:",
+            label="Variable",
             options=extended_options,
             index=None,
             label_visibility="hidden",
-            placeholder="Değişkenler",
-            key="variable_subcategory",
+            placeholder="Variable"
         )
 
         if selected_variable is None:
-            st.warning("Lütfen bir değişken seçin.")
+            st.warning("Please select a variable.")
             return
 
         render_spinner(
             match_statistics_impact_analysis.main,
-            league,
-            season,
-            league_display,
-            season_display,
             selected_variable
         )
 
-def handle_predictive_analytics(team_list, change_situations, change_body_parts, selected_model):
-    league, season, league_display, season_display, _, _, _ = get_user_selection(
-        team_list,
-        change_situations,
-        change_body_parts,
-        include_team=False,
-        include_situation_type=False,
-        include_body_part=False
+def handle_predictive_analytics(selected_model):
+    match_data_df = get_data("match_data")
+    filtered_weeks_list = sorted(set(match_data_df.loc[match_data_df["status"] == "Not started", "week"].tolist()))
+    selected_week = st.sidebar.selectbox(
+        label="Matchweek",
+        options=filtered_weeks_list,
+        index=None,
+        label_visibility="hidden",
+        placeholder="Matchweek"
     )
-    directories = os.path.join(os.path.dirname(__file__), '../data/sofascore/raw/')
-    games_data_next_day, max_round_next_day = load_game_data(directories, league_display, season_display)
 
-    if games_data_next_day is None:
+    if selected_week is None:
+        st.warning("Please select a matchweek.")
         return
 
-    games_list = [f"{row['home_team']} - {row['away_team']}" for index, row in games_data_next_day.iterrows()]
+    games_data_selected_week = load_game_data(selected_week)
+    if games_data_selected_week is None:
+        return
+
+    games_list = [f"{row['home_team']} - {row['away_team']}" for index, row in games_data_selected_week.iterrows()]
     selected_game = st.sidebar.selectbox(
-        label="Maç:",
+        label="Upcoming Matches",
         options=games_list,
         index=None,
         label_visibility="hidden",
-        placeholder="Gelecek Hafta Maçları"
+        placeholder="Upcoming Matches"
     )
 
     if selected_game is None:
-        st.warning("Lütfen bir maç seçin.")
+        st.warning("Please select a match.")
         return
 
     if selected_model == "Dixon-Coles":
         plot_type = st.sidebar.radio(
-            label="Gösterim Şekli:",
-            options=["Matris", "Sıralı", "Özet", "Takım Gücü"],
+            label="Visualization Type",
+            options=["Matrix", "Ranked", "Summary", "Team Strength"],
             index=None,
             label_visibility="hidden"
         )
 
         if plot_type is None:
-            st.warning("Lütfen bir gösterim şekli seçin.")
+            st.warning("Please select a visualization type.")
             return
 
-        if plot_type == "Özet":
+        if plot_type == "Summary":
             first_n_goals = st.sidebar.number_input(
-                label="Gol Kombinasyonu:",
+                label="Goal Combinations",
                 min_value=2,
                 max_value=121,
                 value=10,
                 label_visibility="hidden",
-                placeholder="Gol Kombinasyonu"
+                placeholder="Goal Combinations"
             )
         else:
             first_n_goals = 10
@@ -119,51 +97,50 @@ def handle_predictive_analytics(team_list, change_situations, change_body_parts,
 
     render_spinner(
         predictive_analytics.main,
-        league,
-        season,
-        league_display,
-        season_display,
         selected_model,
         selected_game,
-        max_round_next_day,
+        selected_week,
         plot_type,
         first_n_goals
     )
 
-def display_eda_analysis(team_list, change_situations, change_body_parts, league, season):
+def display_eda_analysis():
+    match_performances = get_data("match_stats_data")
+    match_performance_list = sorted(match_performances["stat_name"].unique())
+
     extended_options = []
-    for stat in match_performance_translations.values():
+    for stat in match_performance_list:
         if stat in match_performance_binary:
-            extended_options.append(f"{stat} (Başarı)")
-            extended_options.append(f"{stat} (Toplam)")
+            extended_options.append(f"{stat} (Success)")
+            extended_options.append(f"{stat} (Total)")
         else:
             extended_options.append(stat)
 
     selected_category = st.sidebar.selectbox(
-        label="Kategori:",
-        options=["İstatistiklerin Maça Etkisi"],
+        label="Category",
+        options=["Impact of Statistics on Matches"],
         index=None,
         label_visibility="hidden",
-        placeholder="Kategoriler"
+        placeholder="Category"
     )
 
     if selected_category is None:
-        st.warning("Lütfen bir kategori seçin.")
+        st.warning("Please select a category.")
         return
 
-    handle_eda_analysis(team_list, change_situations, change_body_parts, selected_category, extended_options)
+    handle_eda_analysis(selected_category, extended_options)
 
-def display_predictive_analytics(team_list, change_situations, change_body_parts, league, season):
+def display_predictive_analytics():
     selected_model = st.sidebar.selectbox(
-        label="Tahmin Yöntemi:",
+        label="Prediction Method",
         options=["Dixon-Coles", "Bradley-Terry"],
         index=None,
         label_visibility="hidden",
-        placeholder="Tahmin Yöntemleri"
+        placeholder="Prediction Method"
     )
 
     if selected_model is None:
-        st.warning("Lütfen bir tahmin yöntemi seçin.")
+        st.warning("Please select a prediction method.")
         return
 
-    handle_predictive_analytics(team_list, change_situations, change_body_parts, selected_model)
+    handle_predictive_analytics(selected_model)

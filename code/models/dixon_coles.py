@@ -24,7 +24,7 @@ def dc_log_like(x, y, alpha_x, beta_x, alpha_y, beta_y, rho, gamma):
         np.log(max(rho_correction(x, y, lambda_x, mu_y, rho), 1e-10)) + log_lambda_x + log_mu_y
     )
 
-def solve_parameters(dataset, init_vals=None, options={"disp": True, "maxiter": 100}, **kwargs):
+def solve_parameters(dataset, init_vals=None, options={"disp": False, "maxiter": 100}, **kwargs):
     teams = np.sort(
         list(
             set(dataset["home_team"].unique()) | set(dataset["away_team"].unique())

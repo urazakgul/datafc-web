@@ -5,7 +5,6 @@ from modules.team_comparison import display_team_comparison
 from modules.player_based import display_player_based
 from modules.match_comparison import display_match_comparison
 from modules.analysis import display_eda_analysis, display_predictive_analytics
-from config import team_list_by_season, change_situations, change_body_parts
 from code.utils.helpers import load_styles
 from st_social_media_links import SocialMediaIcons
 from streamlit_option_menu import option_menu
@@ -42,11 +41,11 @@ def render_sidebar(social_media_links):
 
 def main_menu():
     if "current_section" not in st.session_state:
-        st.session_state["current_section"] = "Ana Sayfa"
+        st.session_state["current_section"] = "Home"
 
     return option_menu(
         menu_title=None,
-        options=["Ana Sayfa", "Takım", "Oyuncu", "Maç", "Analiz", "Metaveri"],
+        options=["Home", "Team", "Player", "Match", "Analysis", "Metadata"],
         icons=["house", "shield", "person", "calendar", "bar-chart", "info-circle"],
         menu_icon="cast",
         default_index=0,
@@ -70,87 +69,51 @@ def main_menu():
 
 def handle_team_section():
     selection = st.sidebar.radio(
-        "Takım Bazlı Analiz Türü",
-        ["Takım Bazlı", "Takımlar Arası"],
+        "Team",
+        ["Single Team", "Team Comparison"],
         index=None,
         label_visibility="hidden"
     )
-    if selection == "Takım Bazlı":
-        display_team_based(
-            team_list_by_season,
-            change_situations,
-            change_body_parts,
-            st.session_state.get("selected_league"),
-            st.session_state.get("selected_season")
-        )
-    elif selection == "Takımlar Arası":
-        display_team_comparison(
-            team_list_by_season,
-            change_situations,
-            change_body_parts,
-            st.session_state.get("selected_league"),
-            st.session_state.get("selected_season")
-        )
+    if selection == "Single Team":
+        display_team_based()
+    elif selection == "Team Comparison":
+        display_team_comparison()
 
 def handle_player_section():
     selection = st.sidebar.radio(
-        "Oyuncu Bazlı Analiz Türü",
-        ["Oyuncu Bazlı", "Oyuncular Arası"],
+        "Player",
+        ["Single Player", "Player Comparison"],
         index=None,
         label_visibility="hidden"
     )
-    if selection == "Oyuncu Bazlı":
-        display_player_based(
-            team_list_by_season,
-            change_situations,
-            change_body_parts,
-            st.session_state.get("selected_league"),
-            st.session_state.get("selected_season")
-        )
-    elif selection == "Oyuncular Arası":
-        st.info("Oyuncular arası bölümü yakında eklenecek.")
+    if selection == "Single Player":
+        display_player_based()
+    elif selection == "Player Comparison":
+        st.info("The Player Comparison section will be added soon.")
 
 def handle_match_section():
     selection = st.sidebar.radio(
-        "Maç Bazlı Analiz Türü",
-        ["Takım Bazlı", "Takımlar Arası"],
+        "Match",
+        ["Single Team", "Team Comparison"],
         index=None,
         label_visibility="hidden"
     )
-    if selection == "Takım Bazlı":
-        st.info("Takım bazlı bölümü yakında eklenecek.")
-    elif selection == "Takımlar Arası":
-        display_match_comparison(
-            team_list_by_season,
-            change_situations,
-            change_body_parts,
-            st.session_state.get("selected_league"),
-            st.session_state.get("selected_season")
-        )
+    if selection == "Single Team":
+        st.info("The Single Team section will be added soon.")
+    elif selection == "Team Comparison":
+        display_match_comparison()
 
 def handle_analysis_section():
     selection = st.sidebar.radio(
-        "Analiz Türü",
-        ["Keşifçi Veri Analizi", "Tahmin"],
+        "Analysis",
+        ["EDA", "Prediction"],
         index=None,
         label_visibility="hidden"
     )
-    if selection == "Keşifçi Veri Analizi":
-        display_eda_analysis(
-            team_list_by_season,
-            change_situations,
-            change_body_parts,
-            st.session_state.get("selected_league"),
-            st.session_state.get("selected_season")
-        )
-    elif selection == "Tahmin":
-        display_predictive_analytics(
-            team_list_by_season,
-            change_situations,
-            change_body_parts,
-            st.session_state.get("selected_league"),
-            st.session_state.get("selected_season")
-        )
+    if selection == "EDA":
+        display_eda_analysis()
+    elif selection == "Prediction":
+        display_predictive_analytics()
 
 def run_app():
     configure_app()
@@ -166,30 +129,30 @@ def run_app():
     general_section = main_menu()
     st.session_state["current_section"] = general_section
 
-    if general_section == "Ana Sayfa":
+    if general_section == "Home":
         display_homepage()
-    elif general_section == "Takım":
+    elif general_section == "Team":
         if st.session_state.get("league_season_confirmed", False):
             handle_team_section()
         else:
-            st.warning("Lütfen önce ana sayfadan lig ve sezon seçimini yapınız.")
-    elif general_section == "Oyuncu":
+            st.warning("Please select the league and season from the homepage first.")
+    elif general_section == "Player":
         if st.session_state.get("league_season_confirmed", False):
             handle_player_section()
         else:
-            st.warning("Lütfen önce ana sayfadan lig ve sezon seçimini yapınız.")
-    elif general_section == "Maç":
+            st.warning("Please select the league and season from the homepage first.")
+    elif general_section == "Match":
         if st.session_state.get("league_season_confirmed", False):
             handle_match_section()
         else:
-            st.warning("Lütfen önce ana sayfadan lig ve sezon seçimini yapınız.")
-    elif general_section == "Analiz":
+            st.warning("Please select the league and season from the homepage first.")
+    elif general_section == "Analysis":
         if st.session_state.get("league_season_confirmed", False):
             handle_analysis_section()
         else:
-            st.warning("Lütfen önce ana sayfadan lig ve sezon seçimini yapınız.")
-    elif general_section == "Metaveri":
-        st.info("Metaveri bölümü yakında eklenecek.")
+            st.warning("Please select the league and season from the homepage first.")
+    elif general_section == "Metadata":
+        st.info("The Metadata section will be added soon.")
 
 if __name__ == "__main__":
     run_app()

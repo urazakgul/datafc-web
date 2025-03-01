@@ -1,98 +1,109 @@
 import streamlit as st
-from code.analysis import (
-    goal_path,
-    shot_location
+from modules.homepage import get_data
+from code.funcs.team import (
+    goal_network,
+    team_shot_location
 )
-from code.utils.helpers import get_user_selection
+from code.utils.helpers import render_spinner
 
-def render_spinner(content_function, *args, **kwargs):
-    with st.spinner("İçerik hazırlanıyor..."):
-        content_function(*args, **kwargs)
+def handle_goal_network():
 
-def handle_goal_path(team_list, change_situations, change_body_parts):
-    league, season, league_display, season_display, team, _, _ = get_user_selection(
-        team_list,
-        change_situations,
-        change_body_parts,
-        include_situation_type=False,
-        include_body_part=False
+    teams = get_data("standings_data")
+    team_list = teams.loc[teams["category"] == "Total", "team_name"].sort_values().tolist()
+
+    selected_team = st.sidebar.selectbox(
+        label="Team",
+        options=team_list,
+        index=None,
+        label_visibility="hidden",
+        placeholder="Team"
     )
 
-    if not team:
-        st.warning("Lütfen bir takım seçin.")
+    if not selected_team:
+        st.warning("Please select a team.")
         return
 
     side = st.sidebar.radio(
-        label="Attığı-Yediği:",
-        options=["Attığı","Yediği"],
+        label="For/Against",
+        options=["For", "Against"],
         index=None,
         label_visibility="hidden"
     )
 
     if side is None:
-        st.warning("Lütfen bir taraf seçin.")
+        st.warning("Please select a side.")
         return
 
     plot_type = st.sidebar.radio(
-        label="Harita Tipi:",
-        options=["Birleştir","Ayrıştır"],
+        label="Map Type",
+        options=["Combined", "Separated"],
         index=None,
         label_visibility="hidden"
     )
 
     if plot_type is None:
-        st.warning("Lütfen bir harita tipi seçin.")
+        st.warning("Please select a map type.")
         return
 
     render_spinner(
-        goal_path.main,
-        league,
-        season,
-        league_display,
-        season_display,
-        team,
+        goal_network.main,
+        selected_team,
         plot_type,
         side
     )
 
-def handle_shot_location(team_list, change_situations, change_body_parts):
-    league, season, league_display, season_display, team, situation_type, _ = get_user_selection(
-        team_list,
-        change_situations,
-        change_body_parts,
-        include_body_part=False
+def handle_shot_location():
+
+    teams = get_data("standings_data")
+    team_list = teams.loc[teams["category"] == "Total", "team_name"].sort_values().tolist()
+
+    situations = get_data("shots_data")
+    situation_list = sorted([s.capitalize() for s in situations["situation"].dropna().unique() if s.lower() != "penalty"])
+
+    selected_team = st.sidebar.selectbox(
+        label="Team",
+        options=team_list,
+        index=None,
+        label_visibility="hidden",
+        placeholder="Team"
     )
-    if not team:
-        st.warning("Lütfen bir takım seçin.")
+
+    if not selected_team:
+        st.warning("Please select a team.")
         return
-    if not situation_type:
-        st.warning("Lütfen bir senaryo tipi seçin.")
+
+    selected_situation = st.sidebar.selectbox(
+        label="Situation",
+        options=["All"] + situation_list,
+        index=None,
+        label_visibility="hidden",
+        placeholder="Situation"
+    )
+
+    if not selected_situation:
+        st.warning("Please select a situation.")
         return
     else:
         render_spinner(
-            shot_location.main,
-            league,
-            season,
-            league_display,
-            season_display,
-            team,
-            situation_type
+            team_shot_location.main,
+            selected_team,
+            selected_situation
         )
 
-def display_team_based(team_list, change_situations, change_body_parts, league, season):
+def display_team_based():
     section = st.sidebar.selectbox(
-        "Kategori:",
-        options=["Gol Ağı", "Şut Lokasyonu"],
+        label="Category",
+        options=["Goal Network", "Shot Location"],
         index=None,
         label_visibility="hidden",
-        placeholder="Kategoriler"
+        placeholder="Category"
     )
 
     if section is None:
-        st.warning("Lütfen bir kategori seçin.")
+        st.warning("Please select a category.")
         return
 
-    if section == "Gol Ağı":
-        handle_goal_path(team_list, change_situations, change_body_parts)
-    elif section == "Şut Lokasyonu":
-        handle_shot_location(team_list, change_situations, change_body_parts)
+    if section == "Goal Network":
+        handle_goal_network()
+    elif section == "Shot Location":
+        handle_shot_location()

@@ -1,17 +1,11 @@
-import os
 import streamlit as st
-from code.analysis import player_heatmap, player_shot_location, player_rating
-from code.utils.helpers import load_filtered_json_files, get_user_selection
-from config import LEAGUE_COUNTRY_LOOKUP
+from modules.homepage import get_data
+from code.funcs.player import player_heatmap, player_shot_location, player_rating
+from code.utils.helpers import render_spinner, load_with_spinner
 
-def render_spinner(content_function, *args, **kwargs):
-    with st.spinner("İçerik hazırlanıyor..."):
-        content_function(*args, **kwargs)
-
-def load_team_data(team, data_type, directories, league_display, season_display):
-    country_display = LEAGUE_COUNTRY_LOOKUP.get(league_display, "unknown")
-    match_data_df = load_filtered_json_files(directories, country_display, league_display, season_display, "match_data")
-    specific_data_df = load_filtered_json_files(directories, country_display, league_display, season_display, data_type)
+def load_team_data(team, data_type):
+    match_data_df = get_data("match_data")
+    specific_data_df = get_data(data_type)
 
     match_data_df = match_data_df[["game_id", "tournament", "season", "week", "home_team", "away_team"]]
 
@@ -55,60 +49,61 @@ def load_team_data(team, data_type, directories, league_display, season_display)
     team_data = merged_data[merged_data["team_name"] == team]
     return team_data[["player_name"]].drop_duplicates()
 
-def handle_player_section(section, team_list, change_situations, change_body_parts):
-    league, season, league_display, season_display, team, _, _ = get_user_selection(
-        team_list,
-        change_situations,
-        change_body_parts,
-        include_situation_type=False,
-        include_body_part=False
-    )
+def handle_player_section(section):
 
-    if not team:
-        st.warning("Lütfen bir takım seçin.")
-        return
+    teams = get_data("standings_data")
+    team_list = teams.loc[teams["category"] == "Total", "team_name"].sort_values().tolist()
 
-    directories = os.path.join(os.path.dirname(__file__), '../data/sofascore/raw/')
-    data_type = (
-        "coordinates_data" if section == "Isı Haritası" else
-        "shots_data" if section == "Şut Lokasyonu" else
-        "lineups_data" if section == "Reyting" else None
-    )
-
-    with st.spinner("Oyuncular yükleniyor..."):
-        team_data = load_team_data(team, data_type, directories, league_display, season_display)
-        players_list = team_data["player_name"].tolist()
-
-    selected_player = st.sidebar.selectbox(
-        "Oyuncular",
-        sorted(players_list),
+    selected_team = st.sidebar.selectbox(
+        label="Team",
+        options=team_list,
         index=None,
         label_visibility="hidden",
-        placeholder="Oyuncular",
-        key=f"{section.lower().replace(' ', '_')}_player_name"
+        placeholder="Team"
+    )
+
+    if not selected_team:
+        st.warning("Please select a team.")
+        return
+
+    data_type = (
+        "coordinates_data" if section == "Heatmap" else
+        "shots_data" if section == "Shot Location" else
+        "lineups_data" if section == "Rating" else None
+    )
+
+    team_data = load_with_spinner(load_team_data, selected_team, data_type)
+    players_list = team_data["player_name"].tolist()
+
+    selected_player = st.sidebar.selectbox(
+        label="Player",
+        options=sorted(players_list),
+        index=None,
+        label_visibility="hidden",
+        placeholder="Player"
     )
 
     if not selected_player:
-        st.warning("Lütfen bir oyuncu seçin.")
+        st.warning("Please select a player.")
     else:
-        if section == "Isı Haritası":
-            render_spinner(player_heatmap.main, league, season, league_display, season_display, team, selected_player)
-        elif section == "Şut Lokasyonu":
-            render_spinner(player_shot_location.main, league, season, league_display, season_display, team, selected_player)
-        elif section == "Reyting":
-            render_spinner(player_rating.main, league, season, league_display, season_display, team, selected_player)
+        if section == "Heatmap":
+            render_spinner(player_heatmap.main, selected_team, selected_player)
+        elif section == "Shot Location":
+            render_spinner(player_shot_location.main, selected_team, selected_player)
+        elif section == "Rating":
+            render_spinner(player_rating.main, selected_team, selected_player)
 
-def display_player_based(team_list, change_situations, change_body_parts, league, season):
+def display_player_based():
     section = st.sidebar.selectbox(
-        "Kategori:",
-        options=["Isı Haritası", "Şut Lokasyonu", "Reyting"],
+        label="Category",
+        options=["Heatmap", "Shot Location", "Rating"],
         index=None,
         label_visibility="hidden",
-        placeholder="Kategoriler"
+        placeholder="Category"
     )
 
     if not section:
-        st.warning("Lütfen bir kategori seçin.")
+        st.warning("Please select a category.")
         return
 
-    handle_player_section(section, team_list, change_situations, change_body_parts)
+    handle_player_section(section)

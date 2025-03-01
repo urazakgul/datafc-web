@@ -1,250 +1,275 @@
 import streamlit as st
-from code.analysis import (
+from modules.homepage import get_data
+from code.funcs.team import (
     xg_time_series,
     xg_actual_vs_expected,
     xg_strengths_vs_weaknesses,
     xg_defensive_efficiency,
-    performance,
+    team_performance,
     team_rating,
     team_similarity,
     goal_creation_patterns,
     team_win_rate,
     geometry
 )
-from code.utils.helpers import get_user_selection
+from code.utils.helpers import render_spinner
 from config import match_performances, game_stats_group_name
 
-def render_spinner(content_function, *args, **kwargs):
-    with st.spinner("İçerik hazırlanıyor..."):
-        content_function(*args, **kwargs)
-
-def process_xg_analysis(league, season, league_display, season_display, team_list_by_season, change_situations, change_body_parts):
+def process_xg_analysis(team_list, situation_list, body_part_list):
     analysis_type = st.sidebar.selectbox(
-        label="xG Analiz Tipleri",
+        label="xG Analysis Type",
         options=[
-            "Kümülatif xG ve Gol (Haftalık Seri)",
-            "Kümülatif xG ve Gol Farkı (Haftalık Seri)",
-            "Gerçekleşen ile Beklenen Gol Farkı",
-            "Üretilen xG ve Yenen xG (xGA)",
-            "Üretilen xG ve Yenen xG (xGA) (Gerçekleşen ile Fark)",
-            "xG Bazlı Savunma Verimliliği",
+            "Cumulative xG vs Goals Scored (Weekly Series)",
+            "Goals Over/Underperformance Compared to xG (Weekly Series)",
+            "Actual vs Expected Goal Differences (Scored & Conceded)",
+            "xG vs xGA",
+            "Actual vs xG Scored & Conceded",
+            "xG-Based Defensive Efficiency",
         ],
         index=None,
         label_visibility="hidden",
-        placeholder="xG Analiz Tipleri",
-        key="xg_analysis_type"
+        placeholder="xG Analysis Type"
     )
 
-    if analysis_type in [
-        "Kümülatif xG ve Gol (Haftalık Seri)",
-        "Kümülatif xG ve Gol Farkı (Haftalık Seri)",
-    ]:
-        render_spinner(xg_time_series.main, league, season, league_display, season_display, plot_type=analysis_type)
-    elif analysis_type == "Gerçekleşen ile Beklenen Gol Farkı":
-        render_spinner(xg_actual_vs_expected.main, league, season, league_display, season_display)
-    elif analysis_type in [
-        "Üretilen xG ve Yenen xG (xGA)",
-        "Üretilen xG ve Yenen xG (xGA) (Gerçekleşen ile Fark)",
-    ]:
-        render_spinner(
-            xg_strengths_vs_weaknesses.main,
-            league,
-            season,
-            league_display,
-            season_display,
-            situation_type=None,
-            body_part_type=None,
-            category=None,
-            plot_type=analysis_type,
-        )
-    elif analysis_type == "xG Bazlı Savunma Verimliliği":
-        render_spinner(xg_defensive_efficiency.main, league, season, league_display, season_display)
+    if analysis_type is None:
+        st.warning("Please select an xG analysis.")
+        return
 
-def display_team_comparison(team_list_by_season, change_situations, change_body_parts, league, season):
+    if analysis_type in [
+        "Cumulative xG vs Goals Scored (Weekly Series)",
+        "Goals Over/Underperformance Compared to xG (Weekly Series)",
+    ]:
+        render_spinner(xg_time_series.main, team_list, plot_type=analysis_type)
+    elif analysis_type == "Actual vs Expected Goal Differences (Scored & Conceded)":
+        render_spinner(xg_actual_vs_expected.main)
+    elif analysis_type in [
+        "xG vs xGA",
+        "Actual vs xG Scored & Conceded",
+    ]:
+
+        selected_situation = None
+        selected_body_part = None
+
+        selected_category = st.sidebar.selectbox(
+            label="Category",
+            options=["All", "Situation", "Body Part"],
+            index=None,
+            label_visibility="hidden",
+            placeholder="Category"
+        )
+
+        if selected_category is None:
+            st.warning("Please select a category.")
+            return
+
+        if selected_category == "Situation":
+            selected_situation = st.sidebar.selectbox(
+                label="Situation",
+                options=situation_list,
+                index=None,
+                label_visibility="hidden",
+                placeholder="Situation"
+            )
+            if selected_situation is None:
+                st.warning("Please select a situation.")
+                return
+            else:
+                render_spinner(
+                    xg_strengths_vs_weaknesses.main,
+                    category=selected_category,
+                    selected_situation=selected_situation,
+                    selected_body_part=None,
+                    plot_type=analysis_type
+                )
+        elif selected_category == "Body Part":
+            selected_body_part = st.sidebar.selectbox(
+                label="Body Part",
+                options=body_part_list,
+                index=None,
+                label_visibility="hidden",
+                placeholder="Body Part"
+            )
+            if selected_body_part is None:
+                st.warning("Please select a body part.")
+                return
+            else:
+                render_spinner(
+                    xg_strengths_vs_weaknesses.main,
+                    category=selected_category,
+                    selected_situation=None,
+                    selected_body_part=selected_body_part,
+                    plot_type=analysis_type
+                )
+        elif selected_category == "All":
+            render_spinner(
+                xg_strengths_vs_weaknesses.main,
+                category=selected_category,
+                selected_situation=None,
+                selected_body_part=None,
+                plot_type=analysis_type
+            )
+    elif analysis_type == "xG-Based Defensive Efficiency":
+        render_spinner(xg_defensive_efficiency.main)
+
+def display_team_comparison():
+
+    teams = get_data("standings_data")
+    team_list = teams.loc[teams["category"] == "Total", "team_name"].sort_values().tolist()
+
+    situation_and_body_part = get_data("shots_data")
+    situation_list = sorted(s.capitalize() for s in situation_and_body_part["situation"].dropna().unique().tolist())
+    body_part_list = sorted(s.capitalize() for s in situation_and_body_part["body_part"].dropna().unique().tolist())
+
     section = st.sidebar.selectbox(
-        label="Kategoriler",
+        label="Category",
         options=[
-            "xG (Beklenen Gol)",
-            "Maç Performansı",
-            "Reyting",
-            "Benzerlik",
-            "Gol Üretim Şekilleri",
-            "Kazanma Oranı",
-            "Geometri"
+            "xG (Expected Goals)",
+            "Match Performance",
+            "Rating",
+            "Similarity",
+            "Goal Creation Patterns",
+            "Win Rate",
+            "Geometry"
         ],
         index=None,
         label_visibility="hidden",
-        placeholder="Kategoriler",
-        key="categories"
+        placeholder="Category"
     )
 
     if section is None:
-        st.warning("Lütfen bir kategori seçin.")
+        st.warning("Please select a category.")
         return
 
-    league, season, league_display, season_display, _, _, _ = get_user_selection(
-        team_list_by_season,
-        change_situations,
-        change_body_parts,
-        include_situation_type=False,
-        include_team=False,
-        include_body_part=False,
-        key_prefix=f"{section.lower()}_section",
-    )
-
-    if section == "xG (Beklenen Gol)":
-        process_xg_analysis(
-            league, season, league_display, season_display, team_list_by_season, change_situations, change_body_parts
-        )
-    elif section == "Maç Performansı":
+    if section == "xG (Expected Goals)":
+        process_xg_analysis(team_list, situation_list, body_part_list)
+    elif section == "Match Performance":
         subcategory = st.sidebar.selectbox(
-            label="İstatistikler",
+            label="Statistic",
             options=match_performances,
             index=None,
             label_visibility="hidden",
-            placeholder="İstatistikler",
-            key="performance_subcategory"
+            placeholder="Statistic"
         )
         if not subcategory:
-            st.warning("Lütfen bir istatistik seçin.")
+            st.warning("Please select a statistic.")
             return
-        render_spinner(performance.main, subcategory, league, season, league_display, season_display)
-    elif section == "Reyting":
+        render_spinner(team_performance.main, subcategory)
+    elif section == "Rating":
         subcategory = st.sidebar.selectbox(
-            label="Analiz Tipleri",
+            label="Analysis Type",
             options=[
-                "Ortalama-Standart Sapma (Genel)",
-                "Ortalama-Standart Sapma (İç Saha)",
-                "Ortalama-Standart Sapma (Deplasman)",
+                "Mean-Standard Deviation (Overall)",
+                "Mean-Standard Deviation (Home)",
+                "Mean-Standard Deviation (Away)",
             ],
             index=None,
             label_visibility="hidden",
-            placeholder="Analiz Tipleri",
-            key="rating_subcategory"
+            placeholder="Analysis Type"
         )
         if not subcategory:
-            st.warning("Lütfen bir analiz tipi seçin.")
+            st.warning("Please select an analysis type.")
             return
-        render_spinner(team_rating.main, subcategory, league, season, league_display, season_display)
-    elif section == "Benzerlik":
+        render_spinner(team_rating.main, subcategory)
+    elif section == "Similarity":
         similarity_algorithm = st.sidebar.selectbox(
-            label="Benzerlik Algoritmaları",
-            options=["Kosinüs Benzerliği", "Temel Bileşen Analizi"],
+            label="Similarity Algorithm",
+            options=["Cosine Similarity", "Principal Component Analysis"],
             index=None,
             label_visibility="hidden",
-            placeholder="Benzerlik Algoritmaları",
-            key="similarity_algorithm"
+            placeholder="Similarity Algorithm"
         )
 
         if similarity_algorithm is None:
-            st.warning("Lütfen bir benzerlik algoritması seçin.")
+            st.warning("Please select a similarity algorithm.")
             return
 
-        include_team = similarity_algorithm != "Temel Bileşen Analizi"
+        if similarity_algorithm == "Cosine Similarity":
+            selected_team = st.sidebar.selectbox(
+                label="Team",
+                options=team_list,
+                index=None,
+                label_visibility="hidden",
+                placeholder="Team"
+            )
+        else:
+            selected_team = None
 
-        league, season, league_display, season_display, team, _, _ = get_user_selection(
-            team_list_by_season,
-            change_situations,
-            change_body_parts,
-            include_situation_type=False,
-            include_team=include_team,
-            include_body_part=False,
-            key_prefix="similarity_section",
-        )
-
-        if include_team and not team:
-            st.warning("Lütfen bir takım seçin.")
+        if similarity_algorithm == "Cosine Similarity" and not selected_team:
+            st.warning("Please select a team.")
+            return
         else:
             filtered_game_stats_group_name = [
-                category for category in game_stats_group_name if category != "Genel Görünüm"
+                category for category in game_stats_group_name if category != "Match overview"
             ]
             selected_categories = st.sidebar.multiselect(
-                label="İstatistik Kategorileri:",
+                label="Statistic Category",
                 options=filtered_game_stats_group_name,
-                default=filtered_game_stats_group_name,
-                key="similarity_categories",
+                default=filtered_game_stats_group_name
             )
 
             if not selected_categories:
-                st.warning("Lütfen en az bir istatistik kategorisi seçin.")
+                st.warning("Please select at least one statistic category.")
+                return
             else:
                 render_spinner(
                     team_similarity.main,
-                    league,
-                    season,
-                    league_display,
-                    season_display,
-                    team if include_team else None,
+                    selected_team,
                     selected_categories,
                     similarity_algorithm
                 )
-    elif section == "Gol Üretim Şekilleri":
+    elif section == "Goal Creation Patterns":
         category = st.sidebar.selectbox(
-            label="Gol Üretim Şekilleri",
+            label="Goal Creation Pattern",
             options=[
-                "Senaryo",
-                "Vücut Bölgesi",
-                "Zaman Dilimi",
-                "Kale Lokasyonu",
-                "Oyuncu Pozisyonu",
-                "İç Saha-Deplasman"
+                "Situation",
+                "Body Part",
+                "Time Interval",
+                "Goal Mouth Location",
+                "Player Position",
+                "Home-Away"
             ],
             index=None,
             label_visibility="hidden",
-            placeholder="Gol Üretim Şekilleri",
-            key="goal_type_category",
+            placeholder="Goal Creation Pattern"
         )
         if not category:
-            st.warning("Lütfen bir gol üretim şekli seçin.")
+            st.warning("Please select a goal creation pattern.")
             return
         subcategory = st.sidebar.selectbox(
-            label="Gol Payı Tipleri",
-            options=["Takım Payına Göre", "Takımlar Arası Paya Göre"],
+            label="Goal Share Type",
+            options=["By Team Share", "By Team Comparison Share"],
             index=None,
             label_visibility="hidden",
-            placeholder="Gol Payı Tipleri",
-            key="goal_type_{category}_subcategory",
+            placeholder="Goal Share Type"
         )
         if not subcategory:
-            st.warning("Lütfen bir gol payı tipi seçin.")
+            st.warning("Please select a goal share type.")
             return
         render_spinner(
             goal_creation_patterns.main,
             category,
-            subcategory,
-            league,
-            season,
-            league_display,
-            season_display
+            subcategory
         )
-    elif section == "Kazanma Oranı":
+    elif section == "Win Rate":
         render_spinner(
-            team_win_rate.main,
-            league, season,
-            league_display,
-            season_display
+            team_win_rate.main
         )
-    elif section == "Geometri":
+    elif section == "Geometry":
         category = st.sidebar.selectbox(
-            label="Geometrik Analizler:",
+            label="Geometric Analysis",
             options=[
-                "Kompaktlık",
-                "Dikey Yayılım",
-                "Yatay Yayılım"
+                "Compactness",
+                "Vertical Spread",
+                "Horizontal Spread"
             ],
             index=None,
             label_visibility="hidden",
-            placeholder="Geometrik Analizler",
-            key="geometry_category",
+            placeholder="Geometric Analysis"
         )
         if not category:
-            st.warning("Lütfen bir analiz tipi seçin.")
+            st.warning("Please select an analysis type.")
             return
         render_spinner(
             geometry.main,
-            category,
-            league,
-            season,
-            league_display,
-            season_display
+            category
         )

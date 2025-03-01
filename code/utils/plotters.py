@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from config import PLOT_STYLE
-from code.utils.helpers import add_footer, add_download_button
+from code.utils.helpers import add_footer
 import streamlit as st
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -15,8 +15,7 @@ def plot_boxplot(
     title: str,
     xlabel: str,
     ylabel: str,
-    ordered_labels: list,
-    filename: str
+    ordered_labels: list
 ) -> None:
     fig, ax = plt.subplots(figsize=(10, 10))
     sns.boxplot(
@@ -45,7 +44,6 @@ def plot_boxplot(
     ax.set_ylabel(ylabel)
     ax.grid(axis="y", linestyle="--", alpha=0.7)
     add_footer(fig)
-    st.markdown(add_download_button(fig, file_name=filename), unsafe_allow_html=True)
     st.pyplot(fig)
 
 def plot_stacked_bar_chart(
@@ -56,7 +54,6 @@ def plot_stacked_bar_chart(
     xlabel: str,
     ylabel: str,
     colors: dict,
-    filename: str,
     sort_by: str = None,
     ascending: bool = False
 ) -> None:
@@ -95,7 +92,6 @@ def plot_stacked_bar_chart(
     add_footer(fig)
     ax.grid(axis="y", linestyle="--", alpha=0.7)
     plt.tight_layout()
-    st.markdown(add_download_button(fig, file_name=filename), unsafe_allow_html=True)
     st.pyplot(fig)
 
 def plot_horizontal_bar(
@@ -105,7 +101,6 @@ def plot_horizontal_bar(
     title: str,
     xlabel: str,
     ylabel: str,
-    filename: str,
     percentages: list = None,
     calculate_percentages: bool = False,
     sort_by: str = None,
@@ -145,12 +140,11 @@ def plot_horizontal_bar(
                 formatted_value, va="center", ha=ha, fontsize=9, color="black"
             )
 
-    ax.set_title(title, fontsize=12, fontweight="bold", pad=35)
+    ax.set_title(title, fontsize=14, fontweight="bold", pad=35)
     ax.set_xlabel(xlabel, fontsize=12, labelpad=20)
     ax.set_ylabel(ylabel)
     ax.grid(axis="y", linestyle="--", alpha=0.7)
     add_footer(fig)
-    st.markdown(add_download_button(fig, file_name=filename), unsafe_allow_html=True)
     st.pyplot(fig)
 
 def plot_stacked_horizontal_bar(
@@ -161,7 +155,6 @@ def plot_stacked_horizontal_bar(
     xlabel: str,
     ylabel: str,
     colors: dict,
-    filename: str,
     sort_by: str = None,
     ascending: bool = False
 ) -> None:
@@ -198,5 +191,4 @@ def plot_stacked_horizontal_bar(
     add_footer(fig)
     ax.grid(axis="y", linestyle="--", alpha=0.7)
     plt.tight_layout()
-    st.markdown(add_download_button(fig, file_name=filename), unsafe_allow_html=True)
     st.pyplot(fig)
