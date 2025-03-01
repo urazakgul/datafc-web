@@ -43,18 +43,18 @@ def render_league_season_selection():
     seasons = ["2024/25"]
 
     selected_league = st.selectbox(
-        "League:",
-        leagues,
+        label="League:",
+        options=leagues,
         index=None,
-        key="league_select",
-        placeholder="Leagues"
+        placeholder="League",
+        key="league_select"
     )
     selected_season = st.selectbox(
-        "Season:",
-        seasons,
+        label="Season:",
+        options=seasons,
         index=None,
-        key="season_select",
-        placeholder="Seasons"
+        placeholder="Season",
+        key="season_select"
     )
 
     if st.button("Save"):
