@@ -35,10 +35,10 @@ def create_momentum_evolution_plot(final_summary_df, view_type):
             ab = AnnotationBbox(getImage(logo_path), (row["team_momentum_per"], row["opponent_momentum_per"]), frameon=False)
             ax.add_artist(ab)
 
-        ax.set_xlabel("Teams' Momentum Productivity (Higher is better)", labelpad=20, fontsize=12)
-        ax.set_ylabel("Opponents' Momentum Productivity (Lower is better)", labelpad=20, fontsize=12)
+        ax.set_xlabel("Team Momentum Productivity (Higher is better)", labelpad=20, fontsize=12)
+        ax.set_ylabel("Opponent Momentum Productivity (Lower is better)", labelpad=20, fontsize=12)
         ax.set_title(
-            f"{st.session_state['selected_league_original']} {st.session_state['selected_season_original']} Season – Teams' vs. Opponents' Momentum Productivity",
+            f"{st.session_state['selected_league_original']} {st.session_state['selected_season_original']} Season – Team vs. Opponent Momentum Productivity",
             fontsize=14,
             fontweight="bold",
             pad=40

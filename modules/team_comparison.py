@@ -138,12 +138,12 @@ def display_team_comparison():
         st.warning("Please select a category.")
         return
 
-    view_type = st.sidebar.radio(
-        "View Type",
-        ["Overall", "Weekly"],
-        index=0,
-        label_visibility="hidden"
-    )
+    # view_type = st.sidebar.radio(
+    #     "View Type",
+    #     ["Overall", "Weekly"],
+    #     index=0,
+    #     label_visibility="hidden"
+    # )
 
     if section == "xG (Expected Goals)":
         process_xg_analysis(team_list, situation_list, body_part_list)
@@ -279,6 +279,12 @@ def display_team_comparison():
             category
         )
     elif section == "Momentum":
+        view_type = st.sidebar.radio(
+            "View Type",
+            ["Overall", "Weekly"],
+            index=0,
+            label_visibility="hidden"
+        )
         render_spinner(
             team_momentum_evolution.main,
             view_type
