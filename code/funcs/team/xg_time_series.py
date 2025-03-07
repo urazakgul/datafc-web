@@ -10,17 +10,13 @@ from config import PLOT_STYLE
 
 plt.style.use(PLOT_STYLE)
 
-def create_xg_cum_actual_plot(xg_goal_teams, teams, plot_type):
+def create_xg_cum_actual_plot(xg_goal_teams, teams):
 
     global_x_min = xg_goal_teams["week"].min()
     global_x_max = xg_goal_teams["week"].max()
 
-    if plot_type == "Cumulative xG vs Goals Scored (Weekly Series)":
-        global_y_min = min(xg_goal_teams["cumulative_goal_count"].min(), xg_goal_teams["cumulative_total_xg"].min())
-        global_y_max = max(xg_goal_teams["cumulative_goal_count"].max(), xg_goal_teams["cumulative_total_xg"].max())
-    elif plot_type == "Goals Over/Underperformance Compared to xG (Weekly Series)":
-        global_y_min = xg_goal_teams["cum_goal_xg_diff"].min()
-        global_y_max = xg_goal_teams["cum_goal_xg_diff"].max()
+    global_y_min = xg_goal_teams["cum_goal_xg_diff"].min()
+    global_y_max = xg_goal_teams["cum_goal_xg_diff"].max()
 
     fig, axes = plt.subplots(
         nrows=(len(teams) + 3) // 4,
@@ -34,92 +30,55 @@ def create_xg_cum_actual_plot(xg_goal_teams, teams, plot_type):
 
         ax = axes[i]
 
-        if plot_type == "Cumulative xG vs Goals Scored (Weekly Series)":
-            ax.plot(team_data["week"], team_data["cumulative_goal_count"], label="Cumulative Goals Scored", color="blue")
-            ax.plot(team_data["week"], team_data["cumulative_total_xg"], label="Cumulative xG", color="red")
-            ax.fill_between(
-                team_data["week"],
-                team_data["cumulative_goal_count"],
-                team_data["cumulative_total_xg"],
-                where=(team_data["cumulative_goal_count"] >= team_data["cumulative_total_xg"]),
-                color="blue",
-                alpha=0.3,
-                interpolate=True
-            )
-            ax.fill_between(
-                team_data["week"],
-                team_data["cumulative_goal_count"],
-                team_data["cumulative_total_xg"],
-                where=(team_data["cumulative_goal_count"] < team_data["cumulative_total_xg"]),
-                color="red",
-                alpha=0.3,
-                interpolate=True
-            )
-            fig.legend(
-                ["Cumulative Goals Scored", "Cumulative xG"],
-                loc="upper center",
-                bbox_to_anchor=(0.5, 1.00),
-                frameon=False,
-                ncol=2,
-                fontsize="large"
-            )
-            fig.suptitle(
-                f"{st.session_state['selected_league_original']} {st.session_state['selected_season_original']} Season – Cumulative xG vs Goals Scored for Each Team",
-                fontsize=24,
-                fontweight="bold",
-                y=1.02
-            )
-            ax.grid(True, linestyle="--", alpha=0.7)
-        elif plot_type == "Goals Over/Underperformance Compared to xG (Weekly Series)":
-            diff = team_data["cumulative_goal_count"] - team_data["cumulative_total_xg"]
-            team_data["diff"] = diff.round(5)
-            for i in range(len(team_data) - 1):
-                x = team_data["week"].iloc[i:i+2]
-                y = team_data["diff"].iloc[i:i+2]
+        diff = team_data["cumulative_goal_count"] - team_data["cumulative_total_xg"]
+        team_data["diff"] = diff.round(5)
+        for i in range(len(team_data) - 1):
+            x = team_data["week"].iloc[i:i+2]
+            y = team_data["diff"].iloc[i:i+2]
 
-                if y.mean() >= 0:
-                    ax.plot(x, y, color="darkblue", linewidth=3)
-                else:
-                    ax.plot(x, y, color="darkred", linewidth=3)
+            if y.mean() >= 0:
+                ax.plot(x, y, color="darkblue", linewidth=3)
+            else:
+                ax.plot(x, y, color="darkred", linewidth=3)
 
-            ax.fill_between(
-                team_data["week"],
-                0,
-                team_data["diff"],
-                where=(team_data["diff"] >= 0),
-                color="blue",
-                alpha=0.3,
-                interpolate=True
-            )
-            ax.fill_between(
-                team_data["week"],
-                0,
-                team_data["diff"],
-                where=(team_data["diff"] < 0),
-                color="red",
-                alpha=0.3,
-                interpolate=True
-            )
+        ax.fill_between(
+            team_data["week"],
+            0,
+            team_data["diff"],
+            where=(team_data["diff"] >= 0),
+            color="blue",
+            alpha=0.3,
+            interpolate=True
+        )
+        ax.fill_between(
+            team_data["week"],
+            0,
+            team_data["diff"],
+            where=(team_data["diff"] < 0),
+            color="red",
+            alpha=0.3,
+            interpolate=True
+        )
 
-            positive_patch = mpatches.Patch(color="darkblue", label="Goals Overperformed (Scored More Than xG)")
-            negative_patch = mpatches.Patch(color="darkred", label="Goals Underperformed (Scored Less Than xG)")
+        positive_patch = mpatches.Patch(color="darkblue", label="Goals Overperformed (Scored More Than xG)")
+        negative_patch = mpatches.Patch(color="darkred", label="Goals Underperformed (Scored Less Than xG)")
 
-            fig.legend(
-                handles=[positive_patch, negative_patch],
-                loc="upper center",
-                bbox_to_anchor=(0.5, 1.00),
-                frameon=False,
-                ncol=2,
-                fontsize="large"
-            )
+        fig.legend(
+            handles=[positive_patch, negative_patch],
+            loc="upper center",
+            bbox_to_anchor=(0.5, 1.00),
+            frameon=False,
+            ncol=2,
+            fontsize="large"
+        )
 
-            fig.suptitle(
-                f"{st.session_state['selected_league_original']} {st.session_state['selected_season_original']} Season – Goals Over/Underperformance Compared to xG for Each Team",
-                fontsize=24,
-                fontweight="bold",
-                y=1.02
-            )
-            ax.grid(True, linestyle="--", alpha=0.7)
+        fig.suptitle(
+            f"{st.session_state['selected_league_original']} {st.session_state['selected_season_original']} Season – Goals Over/Underperformance Compared to xG for Each Team",
+            fontsize=24,
+            fontweight="bold",
+            y=1.02
+        )
+        ax.grid(True, linestyle="--", alpha=0.7)
 
         ax.set_title(team)
 
@@ -139,7 +98,7 @@ def create_xg_cum_actual_plot(xg_goal_teams, teams, plot_type):
 
     st.pyplot(fig)
 
-def main(team_list, plot_type):
+def main(team_list):
     try:
 
         match_data_df = get_data("match_data")
@@ -193,10 +152,7 @@ def main(team_list, plot_type):
 
         teams = [team for team in teams_sorted if team in xg_goal_teams["team_name"].unique()]
 
-        if plot_type == "Cumulative xG vs Goals Scored (Weekly Series)":
-            create_xg_cum_actual_plot(xg_goal_teams, teams, plot_type="Cumulative xG vs Goals Scored (Weekly Series)")
-        elif plot_type == "Goals Over/Underperformance Compared to xG (Weekly Series)":
-            create_xg_cum_actual_plot(xg_goal_teams, teams, plot_type="Goals Over/Underperformance Compared to xG (Weekly Series)")
+        create_xg_cum_actual_plot(xg_goal_teams, teams)
 
     except Exception as e:
         st.error("No suitable data found.")

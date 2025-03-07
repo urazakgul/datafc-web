@@ -74,7 +74,7 @@ def render_league_season_selection():
             st.session_state["selected_league"] = league
             st.session_state["selected_season"] = selected_season_code
             st.session_state["league_season_confirmed"] = True
-            st.success(f"Data for the {selected_league} {selected_season} season is being loaded. Please wait.")
+            st.warning(f"⚠️ Data for the {selected_league} {selected_season} season is being loaded. Please wait.")
 
             import_data("./data/sofascore/raw", country, league, selected_season_code)
 
@@ -111,13 +111,9 @@ def import_data(directory: str, country: str, league: str, season: str):
             st.session_state["imported_data"][subdir] = df
 
         st.session_state["league_season_confirmed"] = True
-        st.success("Data has been successfully loaded.")
+        st.success("✔️ Data has been successfully loaded.")
 
 def get_data(data_type: str) -> pd.DataFrame:
-    if "imported_data" not in st.session_state:
-        st.error("Please select a league and season from the homepage and wait for the data to be loaded.")
-        st.stop()
-
     return st.session_state["imported_data"].get(data_type, pd.DataFrame())
 
 def display_homepage():

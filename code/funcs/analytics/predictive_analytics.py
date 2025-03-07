@@ -93,13 +93,13 @@ def create_predictive_analytics_plot(
             )
 
             ax.set_title(
-                f"{st.session_state['selected_league_original']} {st.session_state['selected_season_original']} Season - Top 20 Ranked Match Outcome Probabilities for Week {selected_week}",
+                f"{st.session_state['selected_league_original']} {st.session_state['selected_season_original']} Season - Top 20 Predicted Scorelines for Week {selected_week}",
                 fontsize=16,
                 fontweight="bold",
                 pad=50
             )
             plt.suptitle(
-                f"{home_team} - {away_team}",
+                f"{home_team} vs. {away_team}",
                 fontsize=16,
                 fontweight="bold",
                 y=0.91

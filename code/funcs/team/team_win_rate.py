@@ -17,9 +17,9 @@ def create_win_rate_plot(ts_df_with_location):
     global_y_max = 100
 
     if st.session_state["selected_league"] == "super_lig":
-        sorted_teams = sort_turkish(pd.DataFrame({'team': ts_df_with_location['team'].unique()}), column="team")["team"].tolist()
+        sorted_teams = sort_turkish(pd.DataFrame({"team": ts_df_with_location["team"].unique()}), column="team")["team"].tolist()
     else:
-        sorted_teams = sorted(ts_df_with_location['team'].unique())
+        sorted_teams = sorted(ts_df_with_location["team"].unique())
 
     fig, axes = plt.subplots(
         nrows=(len(sorted_teams) + 3) // 4,

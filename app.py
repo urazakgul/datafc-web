@@ -129,28 +129,23 @@ def run_app():
     general_section = main_menu()
     st.session_state["current_section"] = general_section
 
+    data_loaded = st.session_state.get("imported_data", None) is not None and bool(st.session_state["imported_data"])
+    league_season_confirmed = st.session_state.get("league_season_confirmed", False)
+
     if general_section == "Home":
         display_homepage()
-    elif general_section == "Team":
-        if st.session_state.get("league_season_confirmed", False):
-            handle_team_section()
+    elif general_section in ["Team", "Player", "Match", "Analysis"]:
+        if league_season_confirmed and data_loaded:
+            if general_section == "Team":
+                handle_team_section()
+            elif general_section == "Player":
+                handle_player_section()
+            elif general_section == "Match":
+                handle_match_section()
+            elif general_section == "Analysis":
+                handle_analysis_section()
         else:
-            st.warning("Please select the league and season from the homepage first.")
-    elif general_section == "Player":
-        if st.session_state.get("league_season_confirmed", False):
-            handle_player_section()
-        else:
-            st.warning("Please select the league and season from the homepage first.")
-    elif general_section == "Match":
-        if st.session_state.get("league_season_confirmed", False):
-            handle_match_section()
-        else:
-            st.warning("Please select the league and season from the homepage first.")
-    elif general_section == "Analysis":
-        if st.session_state.get("league_season_confirmed", False):
-            handle_analysis_section()
-        else:
-            st.warning("Please select the league and season from the homepage first.")
+            st.warning("Please select the league and season from the homepage first, and make sure the data is loaded.")
     elif general_section == "Metadata":
         st.info("The Metadata section will be added soon.")
 

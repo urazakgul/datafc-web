@@ -10,7 +10,8 @@ from code.funcs.team import (
     team_similarity,
     goal_creation_patterns,
     team_win_rate,
-    geometry
+    geometry,
+    team_momentum_evolution
 )
 from code.utils.helpers import render_spinner
 from config import match_performances, game_stats_group_name
@@ -19,7 +20,6 @@ def process_xg_analysis(team_list, situation_list, body_part_list):
     analysis_type = st.sidebar.selectbox(
         label="xG Analysis Type",
         options=[
-            "Cumulative xG vs Goals Scored (Weekly Series)",
             "Goals Over/Underperformance Compared to xG (Weekly Series)",
             "Actual vs Expected Goal Differences (Scored & Conceded)",
             "xG vs xGA",
@@ -35,11 +35,8 @@ def process_xg_analysis(team_list, situation_list, body_part_list):
         st.warning("Please select an xG analysis.")
         return
 
-    if analysis_type in [
-        "Cumulative xG vs Goals Scored (Weekly Series)",
-        "Goals Over/Underperformance Compared to xG (Weekly Series)",
-    ]:
-        render_spinner(xg_time_series.main, team_list, plot_type=analysis_type)
+    if analysis_type == "Goals Over/Underperformance Compared to xG (Weekly Series)":
+        render_spinner(xg_time_series.main, team_list)
     elif analysis_type == "Actual vs Expected Goal Differences (Scored & Conceded)":
         render_spinner(xg_actual_vs_expected.main)
     elif analysis_type in [
@@ -129,7 +126,8 @@ def display_team_comparison():
             "Similarity",
             "Goal Creation Patterns",
             "Win Rate",
-            "Geometry"
+            "Geometry",
+            "Momentum"
         ],
         index=None,
         label_visibility="hidden",
@@ -139,6 +137,13 @@ def display_team_comparison():
     if section is None:
         st.warning("Please select a category.")
         return
+
+    view_type = st.sidebar.radio(
+        "View Type",
+        ["Overall", "Weekly"],
+        index=0,
+        label_visibility="hidden"
+    )
 
     if section == "xG (Expected Goals)":
         process_xg_analysis(team_list, situation_list, body_part_list)
@@ -272,4 +277,9 @@ def display_team_comparison():
         render_spinner(
             geometry.main,
             category
+        )
+    elif section == "Momentum":
+        render_spinner(
+            team_momentum_evolution.main,
+            view_type
         )
