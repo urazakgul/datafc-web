@@ -126,14 +126,14 @@ def handle_shot_location():
     if not selected_situation:
         st.warning("Please select a situation.")
         return
-    else:
-        render_spinner(
-            team_shot_location.main,
-            selected_team,
-            selected_situation,
-            show_xg_based,
-            include_shot_type
-        )
+
+    render_spinner(
+        team_shot_location.main,
+        selected_team,
+        selected_situation,
+        show_xg_based,
+        include_shot_type
+    )
 
 def display_team_based():
     section = st.sidebar.selectbox(

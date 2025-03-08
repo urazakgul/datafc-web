@@ -57,6 +57,9 @@ def handle_player_section(section):
     else:
         team_list = sorted(get_data("standings_data")["team_name"].unique())
 
+    situations = get_data("shots_data")
+    situation_list = sorted([s.capitalize() for s in situations["situation"].dropna().unique() if s.lower() != "penalty"])
+
     selected_team = st.sidebar.selectbox(
         label="Team",
         options=team_list,
@@ -96,7 +99,50 @@ def handle_player_section(section):
         if section == "Heatmap":
             render_spinner(player_heatmap.main, selected_team, selected_player)
         elif section == "Shot Location":
-            render_spinner(player_shot_location.main, selected_team, selected_player)
+            show_xg_based = st.sidebar.radio(
+                label="Show xG-based",
+                options=["Standard View", "xG-Adjusted View"],
+                index=None,
+                horizontal=True,
+                label_visibility="hidden"
+            )
+
+            if show_xg_based is None:
+                st.warning("Please select a view option.")
+                return
+
+            include_shot_type = st.sidebar.radio(
+                label="Shot Type Breakdown",
+                options=["Overall Shot Outcome", "Break by Shot Type"],
+                index=None,
+                horizontal=True,
+                label_visibility="hidden"
+            )
+
+            if include_shot_type is None:
+                st.warning("Please select a shot type breakdown option.")
+                return
+
+            selected_situation = st.sidebar.selectbox(
+                label="Situation",
+                options=["All"] + situation_list,
+                index=None,
+                label_visibility="hidden",
+                placeholder="Situation"
+            )
+
+            if not selected_situation:
+                st.warning("Please select a situation.")
+                return
+
+            render_spinner(
+                player_shot_location.main,
+                selected_team,
+                selected_player,
+                selected_situation,
+                show_xg_based,
+                include_shot_type
+            )
         elif section == "Rating":
             render_spinner(player_rating.main, selected_team, selected_player)
 
