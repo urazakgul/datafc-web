@@ -12,6 +12,13 @@ event_colors = {
     "miss": "#AAAAAA"
 }
 
+shot_colors = {
+    "save": "blue",
+    "miss": "orange",
+    "block": "purple",
+    "post": "black"
+}
+
 match_performances = [
     "Ball Possession",
     "Pass Success Rate",

@@ -22,72 +22,112 @@ def merge_match_data(match_data_df, shots_data_df):
     merged_df = match_data_df.merge(filtered_shots, on=["tournament", "season", "week", "game_id"])
     return merged_df[~merged_df["goal_type"].isin(["penalty", "own"])]
 
-def create_goal_network_plot(side_data, team, last_round, plot_type, side):
-    title_for = f"{st.session_state['selected_league_original']} {st.session_state['selected_season_original']} Season – Goal Networks and Offensive Actions (Goals scored by {team})"
-    title_against = f"{st.session_state['selected_league_original']} {st.session_state['selected_season_original']} Season – Goal Networks and Opponent Offensive Actions (Goals conceded by {team})"
+def create_goal_network_plot(side_data, team, last_round, plot_type, side, combined_option):
+    title_for = f"{st.session_state['selected_league_original']} {st.session_state['selected_season_original']} Season – Goal Networks and Offensive Actions\n\n(Goals scored by {team})"
+    title_against = f"{st.session_state['selected_league_original']} {st.session_state['selected_season_original']} Season – Goal Networks and Opponent Offensive Actions\n\n(Goals conceded by {team})"
+
+    title_jdp_for = f"{st.session_state['selected_league_original']} {st.session_state['selected_season_original']} Season – Goal Networks and Offensive Actions Shaped by Juego de Posición\n\n(Goals scored by {team})"
+    title_jdp_against = f"{st.session_state['selected_league_original']} {st.session_state['selected_season_original']} Season – Goal Networks and Offensive Actions Shaped by Juego de Posición\n\n(Goals conceded by {team})"
 
     title = title_for if side == "For" else title_against
+    title_jdp = title_jdp_for if side == "For" else title_jdp_against
 
     if plot_type == "Combined":
-        pitch = VerticalPitch(
-            pitch_type="opta",
-            corner_arcs=True,
-            half=False,
-            label=False,
-            tick=False
-        )
-        fig, ax = pitch.draw(figsize=(16, 16))
+        if combined_option == "Network with Heatmap":
+            pitch = VerticalPitch(
+                pitch_type="opta",
+                corner_arcs=True,
+                half=False,
+                label=False,
+                tick=False
+            )
+            fig, ax = pitch.draw(figsize=(16, 16))
 
-        for x in [21, 37, 63, 79]:
-            ax.axvline(x=x, color="black", linestyle="--", lw=1, alpha=0.5)
-
-        for y in [33, 66]:
-            ax.hlines(y=y, xmin=0, xmax=100, color="black", linestyle="-", lw=1, alpha=0.5)
-
-        kde_data = side_data[side_data["event_type"] != "goal"]
-        pitch.kdeplot(
-            kde_data["player_x"],
-            kde_data["player_y"],
-            ax=ax,
-            fill=True,
-            cmap="Reds",
-            levels=100,
-            alpha=0.6,
-            zorder=0
-        )
-
-        for _, row in side_data.iterrows():
-            color = event_colors.get(row["event_type"], "black")
-            pitch.scatter(
-                row["player_x"],
-                row["player_y"],
+            kde_data = side_data[side_data["event_type"] != "goal"]
+            pitch.kdeplot(
+                kde_data["player_x"],
+                kde_data["player_y"],
                 ax=ax,
-                color=color,
-                s=50,
+                fill=True,
+                cmap="Reds",
+                levels=100,
                 alpha=0.6,
-                edgecolors="black",
-                zorder=2
+                zorder=0
             )
 
-        for _, group in side_data.groupby("id"):
-            pitch.lines(
-                group["player_x"][:-1],
-                group["player_y"][:-1],
-                group["player_x"][1:],
-                group["player_y"][1:],
+            for _, row in side_data.iterrows():
+                color = event_colors.get(row["event_type"], "black")
+                pitch.scatter(
+                    row["player_x"],
+                    row["player_y"],
+                    ax=ax,
+                    color=color,
+                    s=50,
+                    alpha=0.6,
+                    edgecolors="black",
+                    zorder=2
+                )
+
+            for _, group in side_data.groupby("id"):
+                pitch.lines(
+                    group["player_x"][:-1],
+                    group["player_y"][:-1],
+                    group["player_x"][1:],
+                    group["player_y"][1:],
+                    ax=ax,
+                    lw=1,
+                    color="blue",
+                    alpha=0.2,
+                    zorder=1
+                )
+
+            handles = [plt.Line2D([0], [0], marker="o", color=color, markersize=7, linestyle="None") for _, color in event_colors.items()]
+            legend_labels = [label.capitalize() for label in event_colors.keys()]
+            ax.legend(handles, legend_labels, loc="lower center", bbox_to_anchor=(0.5, -0.05), frameon=False, ncol=3, fontsize=8)
+
+            ax.set_title(title, fontsize=14, fontweight="bold", pad=35)
+            fig.suptitle("Data: SofaScore, Prepared by @urazdev", y=0, x=0.5, fontsize=10, fontstyle="italic", color="gray")
+
+        elif combined_option == "Juego de Posici\u00f3n":
+            combined_data_filtered = side_data[side_data["event_type"] != "goal"]
+
+            pitch = VerticalPitch(
+                pitch_type="opta",
+                line_zorder=2,
+                corner_arcs=True,
+                half=False,
+                label=False,
+                tick=False
+            )
+            fig, ax = pitch.draw(figsize=(16, 16))
+
+            bin_statistic = pitch.bin_statistic_positional(
+                combined_data_filtered["player_x"],
+                combined_data_filtered["player_y"],
+                statistic="count",
+                positional="full",
+                normalize=True
+            )
+
+            pitch.heatmap_positional(
+                bin_statistic,
                 ax=ax,
-                lw=1,
-                color="blue",
-                alpha=0.2,
-                zorder=1
+                cmap="Reds",
+                edgecolors='#000'
             )
 
-        handles = [plt.Line2D([0], [0], marker="o", color=color, markersize=7, linestyle="None") for _, color in event_colors.items()]
-        legend_labels = [label.capitalize() for label in event_colors.keys()]
-        ax.legend(handles, legend_labels, loc="lower center", bbox_to_anchor=(0.5, -0.05), frameon=False, ncol=3, fontsize=8)
+            labels = pitch.label_heatmap(
+                bin_statistic,
+                color='#000',
+                fontsize=16,
+                ax=ax,
+                ha="center",
+                va="center",
+                str_format='{:.0%}'
+            )
 
-        ax.set_title(title, fontsize=10, fontweight="bold", pad=35)
-        fig.suptitle("Data: SofaScore, Prepared by @urazdev", y=0, x=0.5, fontsize=10, fontstyle="italic", color="gray")
+            ax.set_title(title_jdp, fontsize=12, fontweight="bold")
+            fig.suptitle("Data: SofaScore, Prepared by @urazdev", y=0, x=0.5, fontsize=10, fontstyle="italic", color="gray")
 
     elif plot_type == "Separated":
         all_rounds = list(range(1, last_round + 1))
@@ -163,7 +203,7 @@ def create_goal_network_plot(side_data, team, last_round, plot_type, side):
 
     st.pyplot(fig)
 
-def main(team=None, plot_type=None, side=None):
+def main(team=None, plot_type=None, side=None, combined_option=None):
     try:
 
         match_data_df = get_data("match_data")
@@ -218,12 +258,9 @@ def main(team=None, plot_type=None, side=None):
         elif side == "Against":
             side_data = goal_networks_data_conceded_df[goal_networks_data_conceded_df["opponent_team_name"] == team]
 
-        last_round = match_data_df.loc[
-            (match_data_df["home_team"] == team) | (match_data_df["away_team"] == team),
-            "week"
-        ].max()
+        last_round = match_data_df.loc[(match_data_df["home_team"] == team) | (match_data_df["away_team"] == team), "week"].max()
 
-        create_goal_network_plot(side_data, team, last_round, plot_type, side)
+        create_goal_network_plot(side_data, team, last_round, plot_type, side, combined_option)
 
     except Exception as e:
         st.error("No suitable data found.")
