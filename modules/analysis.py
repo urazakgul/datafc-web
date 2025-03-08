@@ -39,17 +39,7 @@ def handle_eda_analysis(selected_category, extended_options):
 def handle_predictive_analytics(selected_model):
     match_data_df = get_data("match_data")
     filtered_weeks_list = sorted(set(match_data_df.loc[match_data_df["status"] == "Not started", "week"].tolist()))
-    selected_week = st.sidebar.selectbox(
-        label="Matchweek",
-        options=filtered_weeks_list,
-        index=None,
-        label_visibility="hidden",
-        placeholder="Matchweek"
-    )
-
-    if selected_week is None:
-        st.warning("Please select a matchweek.")
-        return
+    selected_week = min(filtered_weeks_list)
 
     games_data_selected_week = load_game_data(selected_week)
     if games_data_selected_week is None:

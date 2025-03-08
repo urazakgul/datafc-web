@@ -34,7 +34,7 @@ def create_actual_vs_expected_xg_plot(xg_xga_gerceklesen_teams):
     ax.set_xlabel("Actual - xG (Higher is better)", labelpad=20, fontsize=12)
     ax.set_ylabel("Actual - xGA (Lower is better)", labelpad=20, fontsize=12)
     ax.set_title(
-        f"{st.session_state['selected_league_original']} {st.session_state['selected_season_original']} Season – Actual vs Expected Goal Differences (Scored & Conceded) per Team",
+        f"{st.session_state['selected_league_original']} {st.session_state['selected_season_original']} Season – Actual vs Expected Goal Differences (Scored & Conceded) by Team",
         fontsize=14,
         fontweight="bold",
         pad=40

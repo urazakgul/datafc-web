@@ -1,7 +1,8 @@
 import streamlit as st
+import pandas as pd
 from modules.homepage import get_data
 from code.funcs.player import player_heatmap, player_shot_location, player_rating
-from code.utils.helpers import render_spinner, load_with_spinner
+from code.utils.helpers import render_spinner, load_with_spinner, sort_turkish
 
 def load_team_data(team, data_type):
     match_data_df = get_data("match_data")
@@ -51,8 +52,10 @@ def load_team_data(team, data_type):
 
 def handle_player_section(section):
 
-    teams = get_data("standings_data")
-    team_list = teams.loc[teams["category"] == "Total", "team_name"].sort_values().tolist()
+    if st.session_state["selected_league"] == "super_lig":
+        team_list = sort_turkish(pd.DataFrame({"team_name": get_data("standings_data")["team_name"].unique()}), column="team_name")["team_name"].tolist()
+    else:
+        team_list = sorted(get_data("standings_data")["team_name"].unique())
 
     selected_team = st.sidebar.selectbox(
         label="Team",
@@ -73,11 +76,15 @@ def handle_player_section(section):
     )
 
     team_data = load_with_spinner(load_team_data, selected_team, data_type)
-    players_list = team_data["player_name"].tolist()
+
+    if st.session_state["selected_league"] == "super_lig":
+        players_list = sort_turkish(pd.DataFrame({"player_name": team_data["player_name"].unique()}), column="player_name")["player_name"].tolist()
+    else:
+        players_list = sorted(team_data["player_name"].unique())
 
     selected_player = st.sidebar.selectbox(
         label="Player",
-        options=sorted(players_list),
+        options=players_list,
         index=None,
         label_visibility="hidden",
         placeholder="Player"

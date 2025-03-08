@@ -1,5 +1,6 @@
 import numpy as np
 import streamlit as st
+from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 import matplotlib.pyplot as plt
 from modules.homepage import get_data
 from code.utils.helpers import add_footer
@@ -7,18 +8,18 @@ from config import PLOT_STYLE
 
 plt.style.use(PLOT_STYLE)
 
-def create_strength_vs_weakness_xg_plot(xg_xga_sw_teams, last_round, plot_type, category=None, situation_type=None, body_part_type=None):
+def create_strength_vs_weakness_xg_plot(xg_xga_sw_teams, plot_type, category=None, situation_type=None, body_part_type=None):
 
     fig, ax = plt.subplots(figsize=(12, 12))
 
     if plot_type == "xG vs xGA":
-        x_col, xga_col = "xg", "xga"
-        title_suffix = "xG vs xGA per Team"
-        label_suffix_1 = "xG"
-        label_suffix_2 = "xGA"
+        xg_col, xga_col = "xg", "xga"
+        title_suffix = "xG vs xGA by Team"
+        label_suffix_1 = "xG (Higher is better)"
+        label_suffix_2 = "xGA (Lower is better)"
     elif plot_type == "Actual vs xG Scored & Conceded":
-        x_col, xga_col = "xgDiff", "xgaDiff"
-        title_suffix = "Actual vs xG Scored & Conceded per Team"
+        xg_col, xga_col = "xgDiff", "xgaDiff"
+        title_suffix = "Actual vs xG Scored & Conceded by Team"
         label_suffix_1 = "Goals Scored - xG"
         label_suffix_2 = "Goals Conceded - xGA"
 
@@ -29,39 +30,39 @@ def create_strength_vs_weakness_xg_plot(xg_xga_sw_teams, last_round, plot_type, 
     elif body_part_type is not None:
         info_text = f"\n(Body Part | {body_part_type})"
 
-    xg_xga_sw_teams = xg_xga_sw_teams.sort_values(x_col, ascending=True)
+    fig, ax = plt.subplots(figsize=(12, 10))
 
-    teams = xg_xga_sw_teams["team_name"]
-    xg_values = xg_xga_sw_teams[x_col]
-    xga_values = xg_xga_sw_teams[xga_col]
+    ax.scatter(
+        xg_xga_sw_teams[xg_col],
+        xg_xga_sw_teams[xga_col],
+        alpha=0
+    )
 
-    y = np.arange(len(teams))
+    mean_xgDiff = xg_xga_sw_teams[xg_col].mean()
+    mean_xgConcededDiff = xg_xga_sw_teams[xga_col].mean()
 
-    for i, (xg_val, xga_val) in enumerate(zip(xg_values, xga_values)):
-        ax.plot([xg_val, xga_val], [y[i], y[i]], color="gray", alpha=0.5, linewidth=1)
+    ax.axhline(y=mean_xgConcededDiff, color="darkred", linestyle="--", linewidth=2, label="Actual - xGA = 0")
+    ax.axvline(x=mean_xgDiff, color="darkblue", linestyle="--", linewidth=2, label="Actual - xG = 0")
 
-    for i, val in enumerate(xg_values):
-        ax.scatter(val, y[i], color="blue", edgecolors='black', s=150, label=label_suffix_1 if i == 0 else "")
+    def getImage(path):
+        return OffsetImage(plt.imread(path), zoom=.3, alpha=1)
 
-    for i, val in enumerate(xga_values):
-        ax.scatter(val, y[i], color="red", edgecolors='black', s=150, label=label_suffix_2 if i == 0 else "")
+    for index, row in xg_xga_sw_teams.iterrows():
+        logo_path = f"./imgs/{st.session_state['selected_league']}_logos/{row['team_name']}.png"
+        ab = AnnotationBbox(getImage(logo_path), (row[xg_col], row[xga_col]), frameon=False)
+        ax.add_artist(ab)
 
-    ax.set_yticks(y)
-    ax.set_yticklabels(teams, fontsize=10)
-    ax.axvline(0, color="black", linewidth=0.8, linestyle="--", alpha=0.7)
-    ax.grid(color="gray", linestyle="--", linewidth=0.5, alpha=0.3)
-
+    ax.set_xlabel(label_suffix_1, labelpad=20, fontsize=12)
+    ax.set_ylabel(label_suffix_2, labelpad=20, fontsize=12)
     ax.set_title(
         f"{st.session_state['selected_league_original']} {st.session_state['selected_season_original']} Season – {title_suffix}\n{info_text}",
         fontsize=14,
         fontweight="bold",
-        pad=35
+        pad=40
     )
+    ax.grid(True, linestyle="--", alpha=0.7)
     add_footer(fig)
-    ax.set_xlabel("")
-    ax.legend(loc="upper center", bbox_to_anchor=(0.5, 1.03), ncol=2, frameon=False, fontsize=10)
-
-    plt.tight_layout()
+    ax.invert_yaxis()
 
     st.pyplot(fig)
 
@@ -125,12 +126,9 @@ def main(category=None, selected_situation=None, selected_body_part=None, plot_t
         team_totals_df["xgDiff"] = team_totals_df["goals"] - team_totals_df["xg"]
         team_totals_df["xgaDiff"] = team_totals_df["conceded_goals"] - team_totals_df["xga"]
 
-        last_round = match_data_df["week"].max()
-
         if plot_type == "xG vs xGA":
             create_strength_vs_weakness_xg_plot(
                 team_totals_df,
-                last_round,
                 plot_type="xG vs xGA",
                 category=category,
                 situation_type=selected_situation,
@@ -139,7 +137,6 @@ def main(category=None, selected_situation=None, selected_body_part=None, plot_t
         elif plot_type == "Actual vs xG Scored & Conceded":
             create_strength_vs_weakness_xg_plot(
                 team_totals_df,
-                last_round,
                 plot_type="Actual vs xG Scored & Conceded",
                 category=category,
                 situation_type=selected_situation,
