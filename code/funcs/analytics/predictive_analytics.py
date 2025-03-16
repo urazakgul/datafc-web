@@ -92,6 +92,9 @@ def create_predictive_analytics_plot(
                 edgecolor="black"
             )
 
+            for index, value in enumerate(bar_data["Probability"]):
+                ax.text(value + 0.05, index, f"%{value:.2f}", va="center", fontsize=10, fontweight="bold", color="black")
+
             ax.set_title(
                 f"{st.session_state['selected_league_original']} {st.session_state['selected_season_original']} Season - Top 20 Predicted Scorelines for Week {selected_week}",
                 fontsize=16,

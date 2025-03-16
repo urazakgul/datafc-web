@@ -4,8 +4,7 @@ from modules.homepage import get_data
 from code.funcs.player import (
     player_heatmap,
     player_shot_location,
-    player_rating,
-    player_goal_sequence_involvement
+    player_rating
 )
 from code.utils.helpers import render_spinner, load_with_spinner, sort_turkish
 
@@ -83,10 +82,6 @@ def handle_player_section(section):
         "lineups_data" if section == "Rating" else None
     )
 
-    if section == "Goal Sequence Involvement":
-        render_spinner(player_goal_sequence_involvement.main, selected_team)
-        return
-
     team_data = load_with_spinner(load_team_data, selected_team, data_type)
 
     if st.session_state["selected_league"] == "super_lig":
@@ -158,7 +153,7 @@ def handle_player_section(section):
 def display_player_based():
     section = st.sidebar.selectbox(
         label="Category",
-        options=["Heatmap", "Shot Location", "Rating", "Goal Sequence Involvement"],
+        options=["Heatmap", "Shot Location", "Rating"],
         index=None,
         label_visibility="hidden",
         placeholder="Category"

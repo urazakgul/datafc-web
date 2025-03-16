@@ -1,4 +1,5 @@
 import streamlit as st
+from matplotlib.ticker import MaxNLocator
 import matplotlib.pyplot as plt
 from modules.homepage import get_data
 from code.utils.helpers import add_footer
@@ -63,6 +64,8 @@ def create_goal_network_plot(side_data, team):
         fontsize=12,
         frameon=False
     )
+
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True, prune="lower", nbins=6))
 
     ax.grid(True, linestyle="--", alpha=0.7)
 

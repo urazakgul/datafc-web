@@ -3,6 +3,7 @@ from modules.homepage import display_homepage
 from modules.team_based import display_team_based
 from modules.team_comparison import display_team_comparison
 from modules.player_based import display_player_based
+from modules.player_comparison import display_player_comparison
 from modules.match_comparison import display_match_comparison
 from modules.analysis import display_eda_analysis, display_predictive_analytics
 from code.utils.helpers import load_styles
@@ -89,7 +90,7 @@ def handle_player_section():
     if selection == "Single Player":
         display_player_based()
     elif selection == "Player Comparison":
-        st.info("The Player Comparison section will be added soon.")
+        display_player_comparison()
 
 def handle_match_section():
     selection = st.sidebar.radio(
