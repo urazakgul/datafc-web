@@ -2,6 +2,7 @@ import streamlit as st
 from modules.homepage import get_data
 from code.funcs.analytics import (
     match_statistics_impact_analysis,
+    scoring_analysis,
     predictive_analytics
 )
 from code.utils.helpers import render_spinner
@@ -17,24 +18,29 @@ def load_game_data(selected_week):
         st.warning("No matches found for the selected matchweek in the league and season.")
         return None
 
-def handle_eda_analysis(selected_category, extended_options):
-    if selected_category == "Impact of Statistics on Matches":
-        selected_variable = st.sidebar.selectbox(
-            label="Variable",
-            options=extended_options,
-            index=None,
-            label_visibility="hidden",
-            placeholder="Variable"
-        )
+def handle_eda_analysis(extended_options):
+    selected_variable = st.sidebar.selectbox(
+        label="Variable",
+        options=extended_options,
+        index=None,
+        label_visibility="hidden",
+        placeholder="Variable"
+    )
 
-        if selected_variable is None:
-            st.warning("Please select a variable.")
-            return
+    if selected_variable is None:
+        st.warning("Please select a variable.")
+        return
 
-        render_spinner(
-            match_statistics_impact_analysis.main,
-            selected_variable
-        )
+    render_spinner(
+        match_statistics_impact_analysis.main,
+        selected_variable
+    )
+
+def handle_scoring_analysis(selected_scoring_analysis):
+    render_spinner(
+        scoring_analysis.main,
+        selected_scoring_analysis
+    )
 
 def handle_predictive_analytics(selected_model):
     match_data_df = get_data("match_data")
@@ -119,6 +125,21 @@ def display_eda_analysis():
         return
 
     handle_eda_analysis(selected_category, extended_options)
+
+def display_scoring_analysis():
+    selected_scoring_analysis = st.sidebar.selectbox(
+        label="Scoring Analysis",
+        options=["Home vs Away Goal Matrix"],
+        index=None,
+        label_visibility="hidden",
+        placeholder="Scoring Analysis Type"
+    )
+
+    if selected_scoring_analysis is None:
+        st.warning("Please select a scoring analysis type.")
+        return
+
+    handle_scoring_analysis(selected_scoring_analysis)
 
 def display_predictive_analytics():
     selected_model = st.sidebar.selectbox(

@@ -5,7 +5,7 @@ from modules.team_comparison import display_team_comparison
 from modules.player_based import display_player_based
 from modules.player_comparison import display_player_comparison
 from modules.match_comparison import display_match_comparison
-from modules.analysis import display_eda_analysis, display_predictive_analytics
+from modules.analysis import display_eda_analysis, display_scoring_analysis, display_predictive_analytics
 from code.utils.helpers import load_styles
 from st_social_media_links import SocialMediaIcons
 from streamlit_option_menu import option_menu
@@ -107,12 +107,14 @@ def handle_match_section():
 def handle_analysis_section():
     selection = st.sidebar.radio(
         "Analysis",
-        ["EDA", "Prediction"],
+        ["EDA", "Scoring Analysis", "Prediction"],
         index=None,
         label_visibility="hidden"
     )
     if selection == "EDA":
         display_eda_analysis()
+    elif selection == "Scoring Analysis":
+        display_scoring_analysis()
     elif selection == "Prediction":
         display_predictive_analytics()
 
