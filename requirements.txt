@@ -1,0 +1,12 @@
+streamlit
+pandas
+numpy
+matplotlib
+mplsoccer
+Pillow
+requests
+seaborn
+scipy
+adjustText
+supabase
+unidecode
