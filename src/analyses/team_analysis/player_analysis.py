@@ -70,6 +70,7 @@ def run(team: str, country: str, league: str, season: str):
         data = {k: v for k, v in zip(required_keys, dfs_tuple)}
 
         match_df = data["match_data"]
+        match_df = filter_matches_by_status(match_df, "Ended")
 
         max_week = match_df["week"].max()
 

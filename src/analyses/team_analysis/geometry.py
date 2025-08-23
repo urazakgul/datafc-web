@@ -140,6 +140,7 @@ def compute_geometric_analysis(match_df, coordinates_df, lineups_df, substitutio
 def run(team: str, country: str, league: str, season: str):
     match_df, coordinates_df, lineups_df, substitutions_df = require_session_data("match_data", "coordinates_data", "lineups_data", "substitutions_data")
 
+    match_df = filter_matches_by_status(match_df, "Ended")
     max_week = match_df["week"].max()
 
     overall_data = compute_geometric_analysis(match_df, coordinates_df, lineups_df, substitutions_df)
