@@ -60,7 +60,7 @@ STAT_CONFIG = {
         "stats": ["Final third phase"],
         "type": "success_total_ratio",
         "xlabel": "Successful Actions in Final Third (%)",
-        "title": "Successful Actions in Final Third (%)",
+        "title": "Successful Actions in Final Third",
         "ylim": (0, 100),
     },
     "Difference Between Fouls Committed and Suffered": {
