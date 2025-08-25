@@ -122,7 +122,7 @@ def run(team: str, country: str, league: str, season: str):
             align="center"
         )
         ax.set_title(
-            f"{season} {league}\n{selected_breakdown} Breakdown (% of Goals) for {team}\n(up to Week {max_week})",
+            f"{season} {league}\n{selected_breakdown} Breakdown for {team}\n(up to Week {max_week})",
             fontsize=13,
             fontweight="bold",
             pad=30

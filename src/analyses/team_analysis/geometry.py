@@ -137,17 +137,13 @@ def compute_geometric_analysis(match_df, coordinates_df, lineups_df, substitutio
 
     return overall_data
 
-def run(team: str, country: str, league: str, season: str):
+def run(country: str, league: str, season: str):
     match_df, coordinates_df, lineups_df, substitutions_df = require_session_data("match_data", "coordinates_data", "lineups_data", "substitutions_data")
 
     match_df = filter_matches_by_status(match_df, "Ended")
     max_week = match_df["week"].max()
 
     overall_data = compute_geometric_analysis(match_df, coordinates_df, lineups_df, substitutions_df)
-
-    if team not in overall_data["team_name"].values:
-        st.warning(f"No data available yet for {team} in {season} {league}.")
-        return
 
     metric_options = {
         "Mean Distance": "mean_distance",
@@ -186,23 +182,11 @@ def run(team: str, country: str, league: str, season: str):
             showfliers=False,
             medianprops=dict(color="black", linewidth=2)
         )
-        for i, patch in enumerate(box["boxes"]):
-            if team_order[i] == team:
-                patch.set_facecolor("red")
-            else:
-                patch.set_facecolor("lightgrey")
-        yticklabels = ax.get_yticklabels()
-        for i, label in enumerate(yticklabels):
-            if team_order[i] == team:
-                label.set_color("black")
-                label.set_fontweight("bold")
-            else:
-                label.set_color("grey")
 
         ax.set_xlabel(selected_metric.replace("_", " ").title(), labelpad=20)
         ax.set_ylabel("")
         ax.set_title(
-            f"{season} {league}\n{selected_metric_label} for {team}\n(up to Week {max_week})",
+            f"{season} {league} {selected_metric_label}\n(up to Week {max_week})",
             fontsize=12,
             fontweight="bold",
             loc="center",

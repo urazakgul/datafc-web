@@ -152,7 +152,7 @@ def run(team: str, country: str, league: str, season: str):
         ax.set_ylabel("")
         ax.set_title(
             f"{season} {league}\n Goal Sequence Involvement for {team}\n(up to Week {max_week})",
-            fontsize=18,
+            fontsize=20,
             fontweight="bold",
             pad=70
         )

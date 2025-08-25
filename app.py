@@ -287,6 +287,7 @@ def team_analysis_page():
             st.session_state.selected_action = None
             st.session_state.ta_selected_team = None
             st.session_state.ta_selected_team_analysis = None
+            st.session_state.ta_scope = None
             st.session_state.is_loading = False
             st.rerun()
 
@@ -312,21 +313,24 @@ def team_analysis_page():
         disabled=True
     )
 
-    teams = get_teams_by_league_and_season(
-        st.session_state.selected_country,
-        st.session_state.selected_league,
-        st.session_state.selected_season
+    scope_options = ["Team-specific", "Comparative"]
+    prev_scope = st.session_state.get("ta_scope")
+    selected_scope = st.selectbox(
+        "Scope",
+        scope_options,
+        index=(scope_options.index(prev_scope) if prev_scope in scope_options else None),
+        placeholder="Please select a scope",
+        key="ta_scope"
     )
 
-    selected_team = st.selectbox(
-        "Team",
-        teams,
-        index=None,
-        placeholder="Please select a team",
-        key="ta_selected_team"
-    )
+    if selected_scope != prev_scope:
+        st.session_state.ta_selected_team = None
+        st.session_state.ta_selected_team_analysis = None
 
-    analysis_options = {
+    if selected_scope is None:
+        return
+
+    all_analysis_options = {
         "Shot Locations": "shot_location",
         "Goal Networks": "goal_network",
         "Actual vs Expected Goal Differences": "actual_expected_gd",
@@ -338,26 +342,68 @@ def team_analysis_page():
         "Geometry": "geometry",
         "Player Analysis": "player_analysis",
     }
-    selected_analysis = None
-    if selected_team is not None:
-        selected_analysis = st.selectbox(
-            "Analysis",
-            list(analysis_options.keys()),
-            index=None,
-            placeholder="Please select an analysis",
-            key="ta_selected_team_analysis"
+    analyses_requiring_team = {
+        "Shot Locations",
+        "Goal Networks",
+        "Finishing Over/Underperformance Trend",
+        "Similarity",
+        "Goal Breakdown",
+        "Player Analysis",
+    }
+
+    if selected_scope == "Team-specific":
+        analysis_options = {k: v for k, v in all_analysis_options.items() if k in analyses_requiring_team}
+    else:
+        analysis_options = {k: v for k, v in all_analysis_options.items() if k not in analyses_requiring_team}
+
+    prev_analysis = st.session_state.get("ta_selected_team_analysis_prev")
+    analysis_keys = list(analysis_options.keys())
+    selected_analysis = st.selectbox(
+        "Analysis",
+        analysis_keys,
+        index=(analysis_keys.index(st.session_state.ta_selected_team_analysis)
+               if st.session_state.get("ta_selected_team_analysis") in analysis_keys else None),
+        placeholder="Please select an analysis",
+        key="ta_selected_team_analysis"
+    )
+
+    if selected_analysis != prev_analysis:
+        st.session_state.ta_selected_team = None
+    st.session_state.ta_selected_team_analysis_prev = selected_analysis
+
+    selected_team = None
+    if selected_scope == "Team-specific" and selected_analysis:
+        teams = get_teams_by_league_and_season(
+            st.session_state.selected_country,
+            st.session_state.selected_league,
+            st.session_state.selected_season
+        )
+        selected_team = st.selectbox(
+            "Team",
+            teams,
+            index=(teams.index(st.session_state.ta_selected_team)
+                   if st.session_state.get("ta_selected_team") in teams else None),
+            placeholder="Please select a team",
+            key="ta_selected_team"
         )
 
-    if selected_team is not None and selected_analysis is not None:
+    if selected_analysis:
         module_name = f"src.analyses.team_analysis.{analysis_options[selected_analysis]}"
         try:
             analysis_module = importlib.import_module(module_name)
-            analysis_module.run(
-                team=selected_team,
-                country=st.session_state.selected_country,
-                league=st.session_state.selected_league,
-                season=st.session_state.selected_season
-            )
+            if selected_scope == "Team-specific" and selected_team is not None:
+                analysis_module.run(
+                    team=selected_team,
+                    country=st.session_state.selected_country,
+                    league=st.session_state.selected_league,
+                    season=st.session_state.selected_season
+                )
+            elif selected_scope == "Comparative":
+                analysis_module.run(
+                    country=st.session_state.selected_country,
+                    league=st.session_state.selected_league,
+                    season=st.session_state.selected_season
+                )
         except ModuleNotFoundError:
             st.error(f"Module `{module_name}` not found!")
         except AttributeError:

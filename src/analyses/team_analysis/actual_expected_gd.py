@@ -27,28 +27,18 @@ def _preload_logos(team_logo_urls: dict, timeout: int = 10) -> dict:
             team_logo_images[team] = None
     return team_logo_images
 
-def _add_team_marker(ax, x, y, img, highlight: bool = False):
+def _add_team_marker(ax, x, y, img):
     if img is not None:
-        zoom = 0.5 if highlight else 0.3
         ab = AnnotationBbox(
-            OffsetImage(img, zoom=zoom),
+            OffsetImage(img, zoom=0.3),
             (x, y),
-            frameon=highlight,
-            bboxprops=(
-                dict(edgecolor="red", linewidth=3, boxstyle="square,pad=0", facecolor="none")
-                if highlight else None
-            )
+            frameon=False,
         )
         ax.add_artist(ab)
     else:
-        ax.plot(
-            x, y,
-            "o",
-            color=("red" if highlight else "gray"),
-            markersize=(15 if highlight else 6),
-        )
+        ax.plot(x, y, "o", color="gray", markersize=6)
 
-def run(team: str, country: str, league: str, season: str):
+def run(country: str, league: str, season: str):
     match_df, shots_df, standings_df = require_session_data("match_data", "shots_data", "standings_data")
 
     match_df = filter_matches_by_status(match_df, "Ended")
@@ -88,10 +78,6 @@ def run(team: str, country: str, league: str, season: str):
     actual_xg_xga_diffs["xgConcededDiff"] = actual_xg_xga_diffs["scores_against"] - actual_xg_xga_diffs["xgConceded"]
     xg_xga_teams = actual_xg_xga_diffs[["team_name", "xgDiff", "xgConcededDiff"]].copy()
 
-    if team not in set(xg_xga_teams["team_name"]):
-        st.warning(f"No data available yet for {team} in {season} {league}.")
-        return
-
     urls = st.session_state.get("team_logo_urls", {})
     if "team_logo_images" not in st.session_state:
         st.session_state["team_logo_images"] = _preload_logos(urls)
@@ -118,10 +104,7 @@ def run(team: str, country: str, league: str, season: str):
         name = row["team_name"]
         img = team_logo_images.get(name)
         xi, yi = float(row["xgDiff"]), float(row["xgConcededDiff"])
-        if name == team:
-            _add_team_marker(ax, xi, yi, img, highlight=True)
-        else:
-            _add_team_marker(ax, xi + jitter_x[i], yi + jitter_y[i], img, highlight=False)
+        _add_team_marker(ax, xi + jitter_x[i], yi + jitter_y[i], img)
 
     ax.set_xlim(-lim_x, lim_x)
     ax.set_ylim(-lim_y, lim_y)
@@ -130,7 +113,7 @@ def run(team: str, country: str, league: str, season: str):
     ax.tick_params(axis="both", which="major", pad=14)
 
     ax.set_title(
-        f"{season} {league}\nActual vs Expected Goal Differences by Team, with {team} highlighted\n"
+        f"{season} {league}\nActual vs Expected Goal Differences\n"
         f"(up to Week {max_week})",
         fontsize=16,
         fontweight="bold",

@@ -218,7 +218,7 @@ def _compute_stat(df, config, master_df=None):
     else:
         raise NotImplementedError(f"Unknown stat type: {t}")
 
-def _plot_stat(team_df, value_col, config, highlight_team, season, league, max_week):
+def _plot_stat(team_df, value_col, config, season, league, max_week):
     norm = plt.Normalize(team_df[value_col].min(), team_df[value_col].max())
     cmap = plt.get_cmap("coolwarm_r")
     colors = cmap(norm(team_df[value_col]))
@@ -227,7 +227,7 @@ def _plot_stat(team_df, value_col, config, highlight_team, season, league, max_w
     ax.barh(team_df["team_name"], team_df[value_col], color=colors, align="center")
     ax.set_xlabel(config["xlabel"], labelpad=20)
     ax.set_title(
-        f"{season} {league}\n{config['title']} for {highlight_team}\n(up to Week {max_week})",
+        f"{season} {league}\n{config['title']}\n(up to Week {max_week})",
         fontsize=10, fontweight="bold"
     )
     if "ylim" in config:
@@ -235,16 +235,11 @@ def _plot_stat(team_df, value_col, config, highlight_team, season, league, max_w
     ax.invert_yaxis()
     plt.tight_layout()
     for label in ax.get_yticklabels():
-        if label.get_text() == highlight_team:
-            label.set_fontweight("bold")
-            label.set_color("black")
-        else:
-            label.set_fontweight("normal")
-            label.set_color("gray")
+        label.set_fontweight("normal")
     ax.grid(True, linestyle="--", alpha=0.7)
     st.pyplot(fig)
 
-def run(team: str, country: str, league: str, season: str):
+def run(country: str, league: str, season: str):
     match_df, match_stats_df = require_session_data("match_data", "match_stats_data")
 
     match_df = filter_matches_by_status(match_df, "Ended")
@@ -262,11 +257,6 @@ def run(team: str, country: str, league: str, season: str):
     match_stats_df = _clean_parenthesis_columns(match_stats_df, parenthesis_keywords, target_columns)
 
     master_df = match_stats_df.merge(match_df, on="game_id")
-
-    all_teams = set(master_df["home_team"]).union(set(master_df["away_team"]))
-    if team not in all_teams:
-        st.warning(f"No data available yet for {team} in {season} {league}.")
-        return
 
     all_stats_df_list = []
     for stat in master_df["stat_name"].unique():
@@ -288,4 +278,4 @@ def run(team: str, country: str, league: str, season: str):
             team_df, value_col = _compute_stat(result_all_stats_df, config, master_df)
         else:
             team_df, value_col = _compute_stat(result_all_stats_df, config)
-        _plot_stat(team_df, value_col, config, team, season, league, max_week)
+        _plot_stat(team_df, value_col, config, season, league, max_week)
