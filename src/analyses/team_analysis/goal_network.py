@@ -187,26 +187,26 @@ def run(team: str, country: str, league: str, season: str):
     elif not side_data_for.empty and not side_data_against.empty:
         _render_chart(
             side_data_for,
-            f"{season} {league}\nGoal Networks (Scored) for {team}\n(up to Week {max_week})"
+            f"{season} {league}\nGoal Networks by {team}\n(up to Week {max_week})"
         )
         _render_chart(
             side_data_against,
-            f"{season} {league}\nGoal Networks (Conceded) for {team}\n(up to Week {max_week})"
+            f"{season} {league}\nGoal Networks Against {team}\n(up to Week {max_week})"
         )
         info_box.success(
-            f"Both 'Scored' and 'Conceded' goal networks for {team} are displayed below."
+            f"Both 'by' and 'Against' goal networks for {team} are displayed below."
         )
 
     else:
         if not side_data_for.empty:
             _render_chart(
                 side_data_for,
-                f"{season} {league}\nGoal Networks (Scored) for {team}\n(up to Week {max_week})"
+                f"{season} {league}\nGoal Networks by {team}\n(up to Week {max_week})"
             )
-            info_box.success(f"Only 'Scored' goal networks for {team} are available. No data for 'Conceded'.")
+            info_box.success(f"Only 'by' goal networks for {team} are available. No data for 'Against'.")
         else:
             _render_chart(
                 side_data_against,
-                f"{season} {league}\nGoal Networks (Conceded) for {team}\n(up to Week {max_week})"
+                f"{season} {league}\nGoal Networks Against {team}\n(up to Week {max_week})"
             )
-            info_box.success(f"Only 'Conceded' goal networks for {team} are available. No data for 'Scored'.")
+            info_box.success(f"Only 'Against' goal networks for {team} are available. No data for 'by'.")
