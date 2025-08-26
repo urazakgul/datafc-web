@@ -338,6 +338,8 @@ def team_analysis_page():
         "Aggregated Match Stats": "agg_match_stats",
         "Similarity": "similarity",
         "Goal Breakdown": "goal_breakdown",
+        "Expected Goals by Situation": "xg_by_situation",
+        "Goals vs Expected Goals Difference by Situation": "goals_vs_xg_by_situation",
         "Momentum": "momentum",
         "Geometry": "geometry",
         "Player Analysis": "player_analysis",
