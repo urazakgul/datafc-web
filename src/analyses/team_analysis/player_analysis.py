@@ -7,10 +7,10 @@ from adjustText import adjust_text
 import itertools
 from matplotlib.colors import to_hex
 import matplotlib.pyplot as plt
-import itertools
 
 plt.style.use("fivethirtyeight")
 
+from src.components.explanations import pos_metric_explanations
 from src.utils.session_data import (
     require_session_data,
     filter_matches_by_status
@@ -50,7 +50,8 @@ def run(team: str, country: str, league: str, season: str):
         [
             "Goal Sequence Involvement",
             "Expected Goals vs Expected Assists",
-            "Rating Consistency & Average"
+            "Rating Consistency & Average",
+            "Average Position vs Rating",
         ],
         index=None,
         placeholder="Please select an analysis type"
@@ -62,6 +63,7 @@ def run(team: str, country: str, league: str, season: str):
             "Goal Sequence Involvement": ["match_data", "shots_data", "goal_networks_data"],
             "Expected Goals vs Expected Assists": ["match_data", "lineups_data"],
             "Rating Consistency & Average": ["match_data", "lineups_data"],
+            "Average Position vs Rating": ["match_data", "lineups_data", "coordinates_data"],
         }
 
         required_keys = requirements[selected_player_analysis]
@@ -300,7 +302,9 @@ def run(team: str, country: str, league: str, season: str):
 
         ax.set_title(
             f"{season} {league}\n{team} Player Rating Consistency & Average\n(up to Week {max_week})",
-            fontsize=13, fontweight="bold", pad=30
+            fontsize=13,
+            fontweight="bold",
+            pad=30
         )
         ax.set_xlabel("Rating Average (higher is better)", labelpad=20)
         ax.set_ylabel("Rating Consistency (Std. Deviation, lower is better)", labelpad=20)
@@ -314,3 +318,116 @@ def run(team: str, country: str, league: str, season: str):
         ax.invert_yaxis()
 
         st.pyplot(fig)
+
+    elif selected_player_analysis == "Average Position vs Rating":
+        coordinates_df = data["coordinates_data"]
+        lineups_df = data["lineups_data"]
+
+        match_df = filter_matches_by_status(match_df, "Ended")
+        match_df = match_df[[
+            "country","tournament","season","week","game_id",
+            "home_team","home_team_id","away_team","away_team_id"
+        ]]
+
+        lineups_df = lineups_df[[
+            "country","tournament","season","week","game_id","team","player_id","player_name","rating"
+        ]]
+
+        merged_df = lineups_df.merge(
+            match_df,
+            on=["country", "tournament", "season", "week", "game_id"],
+            how="left"
+        )
+        merged_df["team_name"] = merged_df.apply(
+            lambda row: row["home_team"] if row["team"] == "home" else row["away_team"],
+            axis=1
+        )
+        filtered_df = merged_df[merged_df["team_name"] == team]
+
+        combined_df = filtered_df.merge(
+            coordinates_df,
+            on=["country","tournament","season","week","game_id","team","player_id","player_name"],
+            how="left"
+        )
+
+        if combined_df.empty:
+            st.warning(f"No data available yet for {team} in {season} {league}.")
+            return
+
+        players = sorted(combined_df["player_name"].dropna().unique().tolist())
+        selected_player = st.selectbox(
+            "Player",
+            options=players,
+            index=None,
+            placeholder="Please select a player"
+        )
+
+        if selected_player:
+
+            df_p = combined_df.loc[combined_df["player_name"] == selected_player].copy()
+
+            if df_p.empty:
+                st.warning(f"No coordinate data for {selected_player}.")
+                return
+
+            for col in ["mean_x", "mean_y", "rating", "week"]:
+                if col in df_p.columns:
+                    df_p[col] = pd.to_numeric(df_p[col], errors="coerce")
+
+            df_p = df_p.dropna(subset=["mean_x", "mean_y", "rating"])
+
+            pos_metric = st.selectbox(
+                "Position metric",
+                ["Opponent Goal Distance", "Center Distance", "Diagonal Projection"],
+                index=None,
+                placeholder="Please select a position metric"
+            )
+
+            if pos_metric:
+
+                for col in ["mean_x", "mean_y", "rating", "week"]:
+                    if col in df_p.columns:
+                        df_p[col] = pd.to_numeric(df_p[col], errors="coerce")
+                df_p = df_p.dropna(subset=["mean_x", "mean_y", "rating"]).copy()
+
+                if pos_metric == "Opponent Goal Distance":
+                    pos_1d = np.sqrt((100 - df_p["mean_x"])**2 + (50 - df_p["mean_y"])**2)
+                    pos_1d = 100 * (pos_1d / np.sqrt(100**2 + 50**2))
+                elif pos_metric == "Center Distance":
+                    pos_1d = np.sqrt((50 - df_p["mean_x"])**2 + (50 - df_p["mean_y"])**2)
+                    pos_1d = 100 * (pos_1d / np.sqrt(50**2 + 50**2))
+                elif pos_metric == "Diagonal Projection":
+                    proj = (df_p["mean_x"] + df_p["mean_y"]) / np.sqrt(2)
+                    pos_1d = 100 * (proj / (np.sqrt(2) * 100))
+
+                df_p["pos_index"] = pos_1d
+
+                interpret_text = pos_metric_explanations[pos_metric]["interpretation"]
+
+                st.info(f"**How to Interpret:**  \n{interpret_text}")
+
+                fig, ax = plt.subplots(figsize=(8, 6))
+                ax.scatter(
+                    df_p["pos_index"],
+                    df_p["rating"],
+                    color="dodgerblue",
+                    alpha=0.7,
+                    s=150,
+                    edgecolor="k"
+                )
+
+                ax.set_title(
+                    f"{season} {league}\n{pos_metric} vs Rating\n{selected_player} - {team}\n(up to Week {max_week})",
+                    fontsize=13,
+                    fontweight="bold",
+                    pad=30
+                )
+                ax.set_xlabel("Position Index", labelpad=20)
+                ax.set_ylabel("Rating", labelpad=20)
+                ax.grid(True, linestyle="--", alpha=0.7)
+
+                ax.tick_params(axis='x', pad=8)
+                ax.tick_params(axis='y', pad=8)
+
+                plt.tight_layout()
+                st.pyplot(fig)
