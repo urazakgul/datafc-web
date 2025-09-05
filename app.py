@@ -334,6 +334,7 @@ def team_analysis_page():
         "Shot Locations": "shot_location",
         "Goal Networks": "goal_network",
         "Actual vs Expected Goal Differences": "actual_expected_gd",
+        "Expected Points": "expected_points",
         "Finishing Over/Underperformance Trend": "fin_perf_trend",
         "Aggregated Match Stats": "agg_match_stats",
         "Similarity": "similarity",

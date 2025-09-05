@@ -1,5 +1,5 @@
-import numpy as np
 import streamlit as st
+import numpy as np
 from mplsoccer import VerticalPitch
 from matplotlib.lines import Line2D
 
