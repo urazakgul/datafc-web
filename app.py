@@ -343,6 +343,7 @@ def team_analysis_page():
         "Goals vs Expected Goals Difference by Situation": "goals_vs_xg_by_situation",
         "Momentum": "momentum",
         "Geometry": "geometry",
+        "Percentage of Total Time Spent in Each Game State": "time_state_percentages",
         "Player Analysis": "player_analysis",
     }
     analyses_requiring_team = {
@@ -449,6 +450,7 @@ def prediction_page():
         disabled=True
     )
 
+    # analysis_modes = ["Historical Goal Performance", "Prediction", "Backtest"]
     analysis_modes = ["Historical Goal Performance", "Prediction"]
     selected_analysis_mode = st.selectbox(
         "Mode",
@@ -503,6 +505,22 @@ def prediction_page():
                 st.error(f"`run()` function not found in `{module_name}`!")
             except Exception as e:
                 st.error(f"Error: {e}")
+
+    # elif selected_analysis_mode == "Backtest":
+    #     module_name = "src.analyses.prediction.backtest"
+    #     try:
+    #         analysis_module = importlib.import_module(module_name)
+    #         analysis_module.run(
+    #             country=st.session_state.selected_country,
+    #             league=st.session_state.selected_league,
+    #             season=st.session_state.selected_season,
+    #         )
+    #     except ModuleNotFoundError:
+    #         st.warning(f"`{module_name}` not found. Please create this module with a `run(...)` entrypoint.")
+    #     except AttributeError:
+    #         st.error(f"`run()` function not found in `{module_name}`!")
+    #     except Exception as e:
+    #         st.error(f"Error: {e}")
 
 if st.session_state.page == "selection":
     selection_page()
