@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import matplotlib as mpl
 import matplotlib.ticker as mticker
 import matplotlib.pyplot as plt
 
@@ -48,10 +47,14 @@ def _set_percentage_axis(ax):
 def _team_cum_scored_conceded_diff(df: pd.DataFrame, team: str) -> pd.DataFrame:
     team_df = df[(df["home_team"] == team) | (df["away_team"] == team)].copy()
 
-    team_df["goals_for"] = np.where(team_df["home_team"] == team,
-                                    team_df["home_score"], team_df["away_score"])
-    team_df["goals_against"] = np.where(team_df["home_team"] == team,
-                                        team_df["away_score"], team_df["home_score"])
+    team_df["goals_for"] = np.where(
+        team_df["home_team"] == team,
+        team_df["home_score"], team_df["away_score"]
+    )
+    team_df["goals_against"] = np.where(
+        team_df["home_team"] == team,
+        team_df["away_score"], team_df["home_score"]
+    )
 
     team_df["goals_for"] = pd.to_numeric(team_df["goals_for"], errors="coerce")
     team_df["goals_against"] = pd.to_numeric(team_df["goals_against"], errors="coerce")
@@ -81,7 +84,7 @@ def run(country: str, league: str, season: str):
     )
     mode = mode_map[mode_choice]
 
-    all_seasons = historical_df['season'].dropna().unique()
+    all_seasons = historical_df["season"].dropna().unique()
     selected_seasons = st.multiselect(
         "Select season(s) to use in the model:",
         options=all_seasons,
@@ -92,39 +95,43 @@ def run(country: str, league: str, season: str):
         st.warning("Please select at least one season.")
         return
 
-    filtered_historical = historical_df[historical_df["season"].isin(selected_seasons)]
-    match_df_filtered = match_df[match_df['season'] == season]
-
-    last_week = match_df_filtered['week'].max()
-    last_week_matches = match_df_filtered[match_df_filtered['week'] == last_week]
-
-    match_options = [
-        f"{row['home_team']} - {row['away_team']}"
-        for _, row in last_week_matches.iterrows()
-    ]
-    match_options_unique = list(dict.fromkeys(match_options))
-
-    selected_match = st.selectbox(
-        f"Select a match from week {last_week} ({len(match_options_unique)} matches):",
-        match_options_unique,
-        index=None,
-        placeholder="Select a match",
-        key="historical_selected_match"
+    include_postponed = st.checkbox(
+        "Include postponed matches",
+        value=False,
+        help="Turn on to also show postponed matches from earlier weeks. They will appear under their original weeks.",
+        key="historical_include_postponed"
     )
 
-    if not selected_match:
+    season_df = match_df[match_df["season"] == season].copy()
+    if season_df.empty or season_df["week"].isna().all():
+        st.warning("No matches found for the selected season.")
         return
 
-    match_row = last_week_matches.iloc[match_options.index(selected_match)]
-    home_team = match_row["home_team"]
-    away_team = match_row["away_team"]
+    status_norm = season_df["status"].fillna("").str.strip().str.lower()
+    last_week = int(season_df["week"].max())
+
+    postponed_df = season_df[status_norm == "postponed"].copy() if include_postponed else season_df.iloc[0:0].copy()
+    upcoming_df = season_df[(season_df["week"] == last_week) & (status_norm != "postponed")].copy()
+
+    target_matches = pd.concat([postponed_df, upcoming_df], ignore_index=True)
+    if target_matches.empty:
+        st.warning("No matches found to display for the current settings.")
+        return
+
+    filtered_historical = historical_df[historical_df["season"].isin(selected_seasons)].copy()
 
     filtered_historical = filtered_historical[
         ~(
-            (filtered_historical['season'] == season) &
-            (filtered_historical['week'] >= last_week)
+            (filtered_historical["season"] == season) &
+            (filtered_historical["week"] >= last_week)
         )
-    ]
+    ].copy()
+
+    week_teams = pd.unique(target_matches[["home_team", "away_team"]].values.ravel())
+    filtered_historical = filtered_historical[
+        filtered_historical["home_team"].isin(week_teams) |
+        filtered_historical["away_team"].isin(week_teams)
+    ].copy()
 
     filtered_historical["home_score"] = pd.to_numeric(filtered_historical["home_score"], errors="coerce")
     filtered_historical["away_score"] = pd.to_numeric(filtered_historical["away_score"], errors="coerce")
@@ -132,21 +139,23 @@ def run(country: str, league: str, season: str):
 
     seasons_str = ", ".join(selected_seasons)
 
-    if mode == "distribution":
+    def _draw_distribution(home_team, away_team):
         home_for, home_against, total_home = _goals_for_against_counts(filtered_historical, home_team)
         away_for, away_against, total_away = _goals_for_against_counts(filtered_historical, away_team)
 
         if total_home == 0 or total_away == 0:
-            if total_home == 0:
-                st.info(f"No historical goal data found for **{home_team}** with current filters.")
-            if total_away == 0:
-                st.info(f"No historical goal data found for **{away_team}** with current filters.")
-            st.stop()
+            msgs = []
+            if total_home == 0: msgs.append(f"**{home_team}**")
+            if total_away == 0: msgs.append(f"**{away_team}**")
+            st.info(f"No historical goal data found for {', '.join(msgs)} with current filters.")
+            return
 
         max_goal = max(home_for.index.max(), away_for.index.max())
         common_idx = pd.Index(range(0, max_goal + 1), name="goals")
-        home_for, home_against = home_for.reindex(common_idx, fill_value=0), home_against.reindex(common_idx, fill_value=0)
-        away_for, away_against = away_for.reindex(common_idx, fill_value=0), away_against.reindex(common_idx, fill_value=0)
+        home_for = home_for.reindex(common_idx, fill_value=0)
+        home_against = home_against.reindex(common_idx, fill_value=0)
+        away_for = away_for.reindex(common_idx, fill_value=0)
+        away_against = away_against.reindex(common_idx, fill_value=0)
 
         home_for_pct = (home_for / home_for.sum()) * 100
         home_against_pct = (home_against / home_against.sum()) * 100
@@ -160,17 +169,17 @@ def run(country: str, league: str, season: str):
         width = 0.4
         x = np.arange(len(common_idx))
 
-        axes[0].bar(x - width/2, home_for_pct.values,     width=width, color=scored_color,   alpha=0.85, label="Scored")
+        axes[0].bar(x - width/2, home_for_pct.values, width=width, color=scored_color,   alpha=0.85, label="Scored")
         axes[0].bar(x + width/2, home_against_pct.values, width=width, color=conceded_color, alpha=0.85, label="Conceded")
-        _add_grouped_pct_labels(axes[0], x, home_for_pct.values,     offset=-width/2)
+        _add_grouped_pct_labels(axes[0], x, home_for_pct.values, offset=-width/2)
         _add_grouped_pct_labels(axes[0], x, home_against_pct.values, offset=+width/2)
         axes[0].set_title(f"{home_team}", pad=20)
         axes[0].grid(True, linestyle="--", alpha=0.7)
         _set_percentage_axis(axes[0])
 
-        axes[1].bar(x - width/2, away_for_pct.values,     width=width, color=scored_color,   alpha=0.85)
+        axes[1].bar(x - width/2, away_for_pct.values, width=width, color=scored_color,   alpha=0.85)
         axes[1].bar(x + width/2, away_against_pct.values, width=width, color=conceded_color, alpha=0.85)
-        _add_grouped_pct_labels(axes[1], x, away_for_pct.values,     offset=-width/2)
+        _add_grouped_pct_labels(axes[1], x, away_for_pct.values, offset=-width/2)
         _add_grouped_pct_labels(axes[1], x, away_against_pct.values, offset=+width/2)
         axes[1].set_title(f"{away_team}", pad=20)
         axes[1].set_xlabel("Goals")
@@ -198,16 +207,17 @@ def run(country: str, league: str, season: str):
 
         plt.tight_layout()
         st.pyplot(fig)
+        plt.close(fig)
 
-    elif mode == "cumulative":
+    def _draw_cumulative(home_team, away_team):
         home_ts = _team_cum_scored_conceded_diff(filtered_historical, home_team)
         away_ts = _team_cum_scored_conceded_diff(filtered_historical, away_team)
 
         if home_ts.empty or away_ts.empty:
-            if home_ts.empty:
-                st.info(f"No historical time series could be generated for **{home_team}** with current filters.")
-            if away_ts.empty:
-                st.info(f"No historical time series could be generated for **{away_team}** with current filters.")
+            msgs = []
+            if home_ts.empty: msgs.append(f"**{home_team}**")
+            if away_ts.empty: msgs.append(f"**{away_team}**")
+            st.info(f"No historical time series could be generated for {', '.join(msgs)} with current filters.")
             return
 
         fig, axes = plt.subplots(2, 1, figsize=(10, 9), sharex=False, sharey=True)
@@ -248,3 +258,26 @@ def run(country: str, league: str, season: str):
         )
         plt.tight_layout()
         st.pyplot(fig)
+        plt.close(fig)
+
+    def _draw_for_match(home_team, away_team):
+        st.markdown(f"### {home_team} vs. {away_team}")
+        if mode == "distribution":
+            _draw_distribution(home_team, away_team)
+        else:
+            _draw_cumulative(home_team, away_team)
+
+    if include_postponed and not postponed_df.empty:
+        st.markdown("## Postponed Matches")
+        weeks_postponed = sorted([int(w) for w in postponed_df["week"].dropna().unique()])
+        for wk in weeks_postponed:
+            wk_group = postponed_df[postponed_df["week"] == wk]
+            st.markdown(f"### {season} {league} - Week {wk} (Postponed)")
+            for _, match_row in wk_group.iterrows():
+                _draw_for_match(match_row["home_team"], match_row["away_team"])
+
+    if not upcoming_df.empty:
+        st.markdown("## Upcoming Week")
+        st.markdown(f"### {season} {league} - Week {last_week}")
+        for _, match_row in upcoming_df.iterrows():
+            _draw_for_match(match_row["home_team"], match_row["away_team"])
