@@ -70,6 +70,25 @@ def _plot_skellam_match(params, home_team, away_team, season, league, week):
 def run(country: str, league: str, season: str):
     match_df, historical_df = require_session_data("match_data", "tff_historical_matches")
 
+    _match = match_df.copy()
+    _match["status_norm"] = _match["status"].fillna("").str.strip().str.lower()
+    priority_map = {
+        "ended": 2,
+        "not started": 1,
+        "postponed": 0
+    }
+    _match["status_priority"] = _match["status_norm"].map(priority_map).fillna(-1).astype(int)
+    keep_idx = (
+        _match
+        .groupby(["season", "week", "home_team", "away_team"], dropna=False)["status_priority"]
+        .idxmax()
+    )
+    match_df = (
+        _match.loc[keep_idx]
+        .drop(columns=["status_priority"])
+        .reset_index(drop=True)
+    )
+
     all_seasons = historical_df['season'].dropna().unique()
     selected_seasons = st.multiselect(
         "Select season(s) to include:",

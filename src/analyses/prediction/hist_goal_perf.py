@@ -72,6 +72,25 @@ def _team_cum_scored_conceded_diff(df: pd.DataFrame, team: str) -> pd.DataFrame:
 def run(country: str, league: str, season: str):
     match_df, historical_df = require_session_data("match_data", "tff_historical_matches")
 
+    _match = match_df.copy()
+    _match["status_norm"] = _match["status"].fillna("").str.strip().str.lower()
+    priority_map = {
+        "ended": 2,
+        "not started": 1,
+        "postponed": 0
+    }
+    _match["status_priority"] = _match["status_norm"].map(priority_map).fillna(-1).astype(int)
+    keep_idx = (
+        _match
+        .groupby(["season", "week", "home_team", "away_team"], dropna=False)["status_priority"]
+        .idxmax()
+    )
+    match_df = (
+        _match.loc[keep_idx]
+        .drop(columns=["status_priority"])
+        .reset_index(drop=True)
+    )
+
     mode_map = {
         "Scoreline distribution": "distribution",
         "Season progress (cumulative goals & goal difference)": "cumulative",
