@@ -88,9 +88,9 @@ def run(country: str, league: str, season: str):
     touches_df = (
         result_all_stats_df[result_all_stats_df["stat_name"] == "Touches in penalty area"]
         .groupby("team_name", as_index=False)["stat_value"].mean()
-        .rename(columns={"stat_value": "Touches in Penalty Area (avg)"})
+        .rename(columns={"stat_value": "Touches in Box (avg)"})
     )
-    touches_df["Touches in Penalty Area (avg)"] = touches_df["Touches in Penalty Area (avg)"].round(2)
+    touches_df["Touches in Box (avg)"] = touches_df["Touches in Box (avg)"].round(2)
 
     teams_df = poss_df.merge(touches_df, on="team_name", how="inner")
 
@@ -101,7 +101,7 @@ def run(country: str, league: str, season: str):
     st.session_state.pop('team_logo_images', None)
 
     x_col = "Ball Possession (%) (avg)"
-    y_col = "Touches in Penalty Area (avg)"
+    y_col = "Touches in Box (avg)"
     x = teams_df[x_col].to_numpy(dtype=float)
     y = teams_df[y_col].to_numpy(dtype=float)
 
