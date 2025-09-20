@@ -4,6 +4,7 @@ from io import BytesIO
 import requests
 import pandas as pd
 import numpy as np
+from matplotlib.ticker import FormatStrFormatter
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 import matplotlib.pyplot as plt
 
@@ -142,5 +143,8 @@ def run(country: str, league: str, season: str):
     ax.set_xlabel(x_col, labelpad=20)
     ax.set_ylabel(y_col, labelpad=20)
     ax.grid(True, linestyle="--", alpha=0.7)
+
+    ax.xaxis.set_major_formatter(FormatStrFormatter('%.1f'))
+    ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
 
     st.pyplot(fig)

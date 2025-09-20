@@ -144,7 +144,7 @@ def run(country: str, league: str, season: str):
 
     plt.suptitle(
         f"{season} {league}\n"
-        f"Percentage of Total Time Spent in Each Game State\n"
+        f"Percentage of Total Time Spent in Each Match State\n"
         f"(up to Week {max_week})",
         fontsize=36,
         fontweight="bold",
