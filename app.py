@@ -336,6 +336,7 @@ def team_analysis_page():
         "Actual vs Expected Goal Differences": "actual_expected_gd",
         "Expected Points": "expected_points",
         "Finishing Over/Underperformance Trend": "fin_perf_trend",
+        "On-Target vs Off-Target xG per Shot": "xg_per_shot_on_vs_off",
         "Aggregated Match Stats": "agg_match_stats",
         "Possession vs Touches in Box": "possession_vs_touches_in_box",
         "Ground Duels vs Aerial Duels": "ground_vs_aerial_duels",
