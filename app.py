@@ -347,6 +347,7 @@ def team_analysis_page():
         "Momentum": "momentum",
         "Geometry": "geometry",
         "Percentage of Total Time Spent in Each Game State": "time_state_percentages",
+        "Substitution Impact on Momentum": "subs_momentum_impact",
         "Player Analysis": "player_analysis",
     }
     analyses_requiring_team = {
