@@ -231,11 +231,10 @@ def run(country: str, league: str, season: str):
     jitter_y = rng.normal(0.0, (jitter_pct / 100.0) * (max_y - min_y + 1e-9), size=y.shape)
 
     x_med = float(np.nanmedian(x)) if x.size else 0.0
-    y_med = float(np.nanmedian(y)) if y.size else 0.0
 
     fig, ax = plt.subplots(figsize=(12, 10))
     ax.axvline(x=x_med, color="darkblue", linestyle="--", linewidth=2)
-    ax.axhline(y=y_med, color="darkred", linestyle="--", linewidth=2)
+    ax.axhline(y=0.0, color="darkred", linestyle="--", linewidth=2)
 
     for i, row in teams_df.iterrows():
         name = row["team_name"]
