@@ -114,6 +114,7 @@ def run(country: str, league: str, season: str):
     if "team_logo_images" not in st.session_state:
         st.session_state["team_logo_images"] = preload_logos(st.session_state["team_logo_urls"])
     team_logo_images = st.session_state["team_logo_images"]
+    st.session_state.pop('team_logo_images', None)
 
     fig, ax = plt.subplots(figsize=(12, 10))
 

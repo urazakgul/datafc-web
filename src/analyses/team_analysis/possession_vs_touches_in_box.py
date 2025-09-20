@@ -98,6 +98,7 @@ def run(country: str, league: str, season: str):
     if "team_logo_images" not in st.session_state:
         st.session_state["team_logo_images"] = _preload_logos(urls)
     team_logo_images = st.session_state["team_logo_images"]
+    st.session_state.pop('team_logo_images', None)
 
     x_col = "Ball Possession (%) (avg)"
     y_col = "Touches in Penalty Area (avg)"

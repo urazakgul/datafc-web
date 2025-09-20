@@ -122,6 +122,7 @@ def run(country: str, league: str, season: str):
     if "team_logo_images" not in st.session_state:
         st.session_state["team_logo_images"] = _preload_logos(urls)
     team_logo_images = st.session_state["team_logo_images"]
+    st.session_state.pop('team_logo_images', None)
 
     plot_df = comparison_df.dropna(subset=["expected_points", "actual_points"]).copy()
     x = plot_df["expected_points"].to_numpy(dtype=float)

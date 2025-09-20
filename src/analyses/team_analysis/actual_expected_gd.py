@@ -82,6 +82,7 @@ def run(country: str, league: str, season: str):
     if "team_logo_images" not in st.session_state:
         st.session_state["team_logo_images"] = _preload_logos(urls)
     team_logo_images = st.session_state["team_logo_images"]
+    st.session_state.pop('team_logo_images', None)
 
     x = xg_xga_teams["xgDiff"].to_numpy(dtype=float)
     y = xg_xga_teams["xgConcededDiff"].to_numpy(dtype=float)
