@@ -63,8 +63,6 @@ def run(country: str, league: str, season: str):
 
     master_df = match_stats_df.merge(match_df, on="game_id")
 
-    st.write(master_df)
-
     master_df = master_df[
         master_df["stat_name"].isin(["Ball possession", "Touches in penalty area"])
     ]
