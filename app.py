@@ -346,7 +346,7 @@ def team_analysis_page():
         "Goals vs Expected Goals Difference by Situation": "goals_vs_xg_by_situation",
         "Momentum": "momentum",
         "Geometry": "geometry",
-        "Percentage of Total Time Spent in Each Game State": "time_state_percentages",
+        "Percentage of Total Time Spent in Each Match State": "time_state_percentages",
         "Substitution Impact on Momentum": "subs_momentum_impact",
         "Player Analysis": "player_analysis",
     }
