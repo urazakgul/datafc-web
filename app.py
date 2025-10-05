@@ -488,6 +488,7 @@ def prediction_page():
             "Dixon-Coles": "dixon_coles",
             "Bivariate Poisson": "bivariate_poisson",
             "Skellam Distribution": "skellam_distribution",
+            "Ensemble (All Models)": "ensemble",
         }
         selected_prediction_method = st.selectbox(
             "Prediction Method",
