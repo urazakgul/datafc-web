@@ -213,11 +213,11 @@ def run(country: str, league: str, season: str):
     with col1:
         w_dc = st.slider("Dixon-Coles", 0.0, 1.0, 0.25, 0.01, key="w_dc")
     with col2:
-        w_dc_decay = st.slider("DC (Time Decay)", 0.0, 1.0, 0.25, 0.01, key="w_dc_decay")
+        w_dc_decay = st.slider("Dixon-Coles (Time Decay)", 0.0, 1.0, 0.25, 0.01, key="w_dc_decay")
     with col3:
         w_bp = st.slider("Bivariate Poisson", 0.0, 1.0, 0.25, 0.01, key="w_bp")
     with col4:
-        w_sk = st.slider("Skellam", 0.0, 1.0, 0.25, 0.01, key="w_sk")
+        w_sk = st.slider("Skellam Distribution", 0.0, 1.0, 0.25, 0.01, key="w_sk")
 
     _total = w_dc + w_dc_decay + w_bp + w_sk
     if abs(_total - 1.0) > 0.01:
